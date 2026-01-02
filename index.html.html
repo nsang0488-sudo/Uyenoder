@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UYÊN COFFEE POS PRO</title>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <style>
+        :root { --primary: #5d3fd3; --success: #28a745; --danger: #dc3545; --dark: #2c3e50; --bg: #f4f7f6; --warning: #ffc107; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .navbar { background: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-shrink: 0; }
+        .nav-item { padding: 8px 12px; cursor: pointer; border-radius: 5px; font-size: 12px; font-weight: bold; background: #f0f0f0; border: none; }
+        .nav-item.active { background: var(--primary); color: white; }
+        .tab-content { display: none; flex: 1; overflow: hidden; position: relative; padding-bottom: 65px; }
+        .tab-content.active { display: flex; }
+        .tables-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; padding: 15px; overflow-y: auto; align-content: start; }
+        .order-container { display: flex; width: 100%; height: 100%; background: white; overflow: hidden; }
+        .menu-part { width: 55%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; overflow-y: auto; background: #f1f5f9; align-content: start; }
+        .bill-part { width: 45%; display: flex; flex-direction: column; border-left: 2px solid #ddd; height: 100%; background: white; }
+        .bill-items-area { flex: 1; overflow-y: auto; background: white; scroll-behavior: smooth; }
+        .pos-controls { padding: 10px; background: #eee; border-top: 2px solid #ccc; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex-shrink: 0; }
+        .mobile-bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: white; border-top: 2px solid #ddd; z-index: 9999; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .m-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: #666; font-weight: bold; cursor: pointer; }
+        .m-btn.active { color: var(--primary); background: #f8f9ff; }
+        .table-card { background: white; height: 85px; border: 2px solid #cbd5e0; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; order: 2; }
+        .table-card.status-red { border-color: var(--danger); background: #fee2e2; order: 1; }
+        .table-card.status-green { border-color: var(--success); background: #dcfce7; order: 1; }
+        .table-card.selected { outline: 3px solid var(--warning); }
+        .table-timer { font-size: 10px; color: #666; margin-top: 4px; }
+        .menu-item { background: white; border: 1px solid #ddd; padding: 12px 4px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 12px; }
+        .bill-row { padding: 10px; border-bottom: 1px dashed #eee; display: flex; flex-direction: column; font-size: 12px; }
+        .item-not-done { color: var(--danger); font-weight: bold; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100000; align-items: center; justify-content: center; padding: 20px; }
+        .modal { background: white; width: 100%; max-width: 350px; border-radius: 15px; padding: 20px; max-height: 85vh; overflow-y: auto; }
+        .admin-section { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee; }
+        .bill-history-card { background: #fff; padding: 12px; border-radius: 8px; border-left: 4px solid var(--primary); margin-bottom: 10px; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .shift-log-card { background: #f9f9f9; padding: 12px; border-radius: 8px; border-left: 4px solid var(--dark); margin-bottom: 10px; font-size: 13px; }
+        .opt-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .opt-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .qr-image-display { width: 100%; max-width: 200px; margin: 10px auto; display: none; }
+        .detail-item { display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-top: 2px; border-bottom: 1px dotted #eee; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div style="font-weight: 900; color: var(--primary);">UYÊN COFFEE</div>
+    <button class="nav-item" onclick="accessAdmin()">⚙️ QUẢN LÝ</button>
+</div>
+
+<div id="tab-tables" class="tab-content active">
+    <div id="list-tables" class="tables-grid"></div>
+</div>
+
+<div id="tab-pos" class="tab-content">
+    <div class="order-container">
+        <div id="list-menu" class="menu-part"></div>
+        <div class="bill-part">
+            <div style="background: var(--dark); color: white; padding: 10px; font-size: 12px; position: relative;">
+                <b id="lblTable">CHỌN BÀN...</b>
+                <button onclick="openMoveTable()" style="position:absolute; right:10px; top:8px; background:var(--primary); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px;">CHUYỂN</button>
+                <div id="lblTotal" style="color: var(--warning); font-weight: bold; font-size: 16px;">0đ</div>
+            </div>
+            <div id="billItems" class="bill-items-area"></div>
+            <div class="pos-controls">
+                <button onclick="handleConfirm()" style="background:var(--danger); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; font-size:11px;">XÁC NHẬN</button>
+                <button onclick="setStatus('green')" style="background:var(--success); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; font-size:11px;">XONG HẾT</button>
+                <button onclick="openPayModal()" style="grid-column: span 2; background:var(--dark); color:white; border:none; padding:80px; border-radius:8px; font-weight:bold;">THANH TOÁN</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tab-admin" class="tab-content">
+    <div style="padding:15px; width:100%; overflow-y:auto; padding-bottom:100px;">
+        <h2>Quản Lý Doanh Thu</h2>
+        
+        <div class="admin-section">
+            <h3>📊 Thống Kê Tổng</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                <input type="date" id="dateFrom" onchange="filterStats()">
+                <input type="date" id="dateTo" onchange="filterStats()">
+            </div>
+            <div style="background: #e9ecef; padding:15px; border-radius:8px; font-size:18px; font-weight:bold;">
+                Tổng lọc: <span id="statFiltered" style="color:var(--danger)">0đ</span>
+            </div>
+        </div>
+
+        <div class="admin-section" id="activeBillSection" style="display:none;">
+            <h3>🧾 Bill Trong Ca Hiện Tại</h3>
+            <div id="activeBillsList"></div>
+        </div>
+
+        <div class="admin-section">
+            <h3>📦 Trạng Thái Ca</h3>
+            <div id="shiftSummary" style="margin-bottom:10px; padding:10px; background:#f0f0f0; border-radius:5px; font-size:13px;">Chưa mở ca</div>
+            <button onclick="startShift()" id="btnOpen" style="width:100%;padding:12px;background:var(--success);color:white;border:none;border-radius:8px;font-weight:bold;">MỞ CA MỚI</button>
+            <button onclick="endShift()" id="btnClose" style="width:100%;padding:12px;background:var(--danger);color:white;border:none;border-radius:8px;display:none;font-weight:bold;">CHỐT CA (ĐÓNG CA)</button>
+        </div>
+
+        <div class="admin-section">
+            <h3>📜 Lịch Sử Ca Đã Chốt</h3>
+            <div id="shiftLogsList" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+
+        <div class="admin-section">
+            <h3>🖼️ Cài Đặt QR</h3>
+            <input type="text" id="qrUrlInput" placeholder="Link ảnh QR..." style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ddd;">
+            <button onclick="saveQR()" style="width:100%;padding:10px;background:var(--dark);color:white;border:none;border-radius:5px;">LƯU QR</button>
+        </div>
+
+        <div class="admin-section">
+            <h3>📝 Menu</h3>
+            <input id="inName" placeholder="Tên món" style="width:100%;padding:10px;margin-bottom:5px;border:1px solid #ddd;">
+            <input id="inPrice" type="number" placeholder="Giá" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ddd;">
+            <button onclick="addMenu()" style="width:100%;padding:10px;background:var(--primary);color:white;border:none;border-radius:5px;">THÊM MÓN</button>
+            <div id="adminMenu" style="margin-top:10px; max-height:200px; overflow-y:auto;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="payModal" class="modal-overlay">
+    <div class="modal">
+        <h3>Thanh toán</h3>
+        <div style="font-size:18px; margin-bottom:10px;">Tổng: <b id="payTotal" style="color:red">0</b></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+            <button id="payCashBtn" class="opt-btn" onclick="setPayMethod('cash')">TIỀN MẶT</button>
+            <button id="payTransferBtn" class="opt-btn" onclick="setPayMethod('transfer')">CHUYỂN KHOẢN</button>
+        </div>
+        <div id="cashSection">
+            <input type="number" id="cashIn" placeholder="Khách đưa..." style="width:100%; padding:15px; border:2px solid var(--primary); border-radius:8px;" oninput="calcChange()">
+            <div style="margin:15px 0; font-size:18px;">Thối: <b id="cashChange" style="color:var(--success)">0đ</b></div>
+        </div>
+        <div id="transferSection" style="display:none; text-align:center;">
+            <img id="qrDisplay" class="qr-image-display" src="">
+        </div>
+        <button onclick="handlePay()" style="width:100%; background:var(--dark); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold;">HOÀN TẤT</button>
+        <p onclick="closeModal('payModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer;">Hủy</p>
+    </div>
+</div>
+
+<div id="optModal" class="modal-overlay"><div class="modal"><h3 id="optTitle"></h3><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;"><button id="optNong" class="opt-btn" onclick="curType='Nóng'; updateOptUI()">NÓNG</button><button id="optDa" class="opt-btn" onclick="curType='Đá'; updateOptUI()">ĐÁ</button></div><input id="optNote" placeholder="Ghi chú..." style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; margin-bottom:15px;"><button onclick="confirmAdd()" style="width:100%; background:var(--primary); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold;">THÊM VÀO ĐƠN</button><p onclick="closeModal('optModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer;">Hủy</p></div></div>
+<div id="qtyModal" class="modal-overlay"><div class="modal"><h3>Sửa món</h3><p id="qtyName"></p><div style="display:flex; justify-content:center; align-items:center; gap:20px; margin:25px 0;"><button class="opt-btn" style="width:50px" onclick="changeQty(-1)">-</button><b id="qtyVal" style="font-size:28px;">1</b><button class="opt-btn" style="width:50px" onclick="changeQty(1)">+</button></div><button onclick="toggleItemDone()" style="width:100%; background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; margin-bottom:10px;">XONG</button><button onclick="deleteCurrentItem()" style="width:100%; background:var(--danger); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold;">XÓA MÓN</button><p onclick="closeModal('qtyModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer;">Đóng</p></div></div>
+<div id="moveTableModal" class="modal-overlay"><div class="modal"><h3>Chuyển bàn</h3><p>Từ bàn <b id="moveFrom">?</b> sang:</p><select id="selectToTable" style="width:100%; padding:15px; margin-bottom:20px; border-radius:10px; border:2px solid var(--primary);"></select><button onclick="handleMoveTable()" style="width:100%; background:var(--primary); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold;">XÁC NHẬN</button><p onclick="closeModal('moveTableModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer;">Hủy</p></div></div>
+
+<div class="mobile-bottom-nav">
+    <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
+    <div class="m-btn" id="btn-tab-pos" onclick="showTab('pos')">☕ POS</div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCY23UN98357R178ZCxY9BhoTiX3LTzaQ8",
+        authDomain: "uyencoffeepos.firebaseapp.com",
+        databaseURL: "https://uyencoffeepos-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "uyencoffeepos",
+        storageBucket: "uyencoffeepos.firebasedatabase.app",
+        messagingSenderId: "320504505998",
+        appId: "1:320504505998:web:267ba0c6e8a283b4dd8bdf"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let curTable = null, menuData = {}, tablesData = {}, currentShift = null, curType = 'Đá', tempItem = null, editIdx = null, payMethod = 'cash', qrUrl = "";
+
+    // Lắng nghe dữ liệu
+    db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
+    db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
+    db.ref('active_shift').on('value', s => { currentShift = s.val(); updateShiftUI(); renderActiveBills(); });
+    db.ref('shift_logs').on('value', s => { renderShiftLogs(s.val()); filterStats(); });
+    db.ref('settings/qrUrl').on('value', s => { 
+        qrUrl = s.val() || ""; 
+        // Xử lý link Google Drive nếu có
+        let displayUrl = qrUrl;
+        if(qrUrl.includes('drive.google.com')){
+            let fileId = qrUrl.split('/d/')[1]?.split('/')[0];
+            if(fileId) displayUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w500`;
+        }
+        document.getElementById('qrDisplay').src = displayUrl; 
+        document.getElementById('qrUrlInput').value = qrUrl; 
+    });
+
+    function accessAdmin() { if(prompt("Nhập mật khẩu quản lý:") === "1905") { showTab('admin'); } else { alert("Sai mật khẩu!"); } }
+
+    // QUẢN LÝ CA
+    function startShift() { db.ref('active_shift').set({start: new Date().toLocaleString('vi-VN'), revenue: 0, revenueCash: 0, revenueTransfer: 0}); }
+    
+    function endShift() { 
+        if(confirm("Xác nhận CHỐT CA? Toàn bộ bàn sẽ được dọn trống.")) { 
+            const data = { 
+                start: currentShift.start,
+                end: new Date().toLocaleTimeString('vi-VN'), 
+                date: new Date().toLocaleDateString('vi-VN'), 
+                revenue: currentShift.revenue || 0,
+                revenueCash: currentShift.revenueCash || 0,
+                revenueTransfer: currentShift.revenueTransfer || 0,
+                timestamp: Date.now() 
+            }; 
+            db.ref('shift_logs').push(data).then(() => { 
+                db.ref('active_shift').remove(); 
+                db.ref('tables').remove(); 
+            }); 
+        } 
+    }
+
+    function deleteShiftLog(key) { if(confirm("Bạn muốn xóa vĩnh viễn lịch sử ca này?")) db.ref('shift_logs/' + key).remove(); }
+
+    function renderShiftLogs(logs) {
+        const list = document.getElementById('shiftLogsList');
+        list.innerHTML = '';
+        if(!logs) { list.innerHTML = '<p style="color:gray; text-align:center;">Chưa có ca nào được chốt.</p>'; return; }
+        Object.keys(logs).reverse().forEach(key => {
+            const log = logs[key];
+            list.innerHTML += `
+                <div class="shift-log-card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <div><b>📅 ${log.date}</b><br><small>🕒 ${log.start.split(',')[1] || log.start} - ${log.end}</small></div>
+                        <button onclick="deleteShiftLog('${key}')" style="background:red; color:white; border:none; border-radius:4px; font-size:10px;">XÓA</button>
+                    </div>
+                    <div style="font-size:11px; margin-top:5px; color:#666;">
+                        TM: ${(log.revenueCash||0).toLocaleString()} | CK: ${(log.revenueTransfer||0).toLocaleString()}
+                    </div>
+                    <div style="color:var(--danger); font-weight:bold; font-size:15px; margin-top:5px; border-top:1px dashed #ccc;">Tổng: ${log.revenue.toLocaleString()}đ</div>
+                </div>`;
+        });
+    }
+
+    // HIỂN THỊ BILL ĐÃ THANH TOÁN (CHI TIẾT MÓN)
+    function renderActiveBills() {
+        const section = document.getElementById('activeBillSection');
+        const list = document.getElementById('activeBillsList');
+        list.innerHTML = '';
+        if(!currentShift || !currentShift.history) { section.style.display = 'none'; return; }
+        section.style.display = 'block';
+        Object.keys(currentShift.history).reverse().forEach(key => {
+            const bill = currentShift.history[key];
+            let itemsHtml = (bill.items || []).map((it, idx) => `
+                <div class="detail-item">
+                    <span>${it.qty}x ${it.fName}</span>
+                    <span>${(it.price * it.qty).toLocaleString()}đ 
+                        <span style="color:red; cursor:pointer;" onclick="deleteItemInBill('${key}', ${idx})"> (X)</span>
+                    </span>
+                </div>
+            `).join('');
+
+            list.innerHTML += `
+                <div class="bill-history-card">
+                    <div style="margin-bottom:5px;">
+                        <b>Bàn ${bill.table} (${bill.time}) - ${bill.method === 'transfer' ? '💳 CK' : '💵 TM'}</b>
+                        <button style="float:right; color:red; border:none; background:none; font-weight:bold;" onclick="deleteBill('${key}')">XÓA BILL</button>
+                    </div>
+                    ${itemsHtml}
+                    <div style="color:var(--primary); font-weight:bold; margin-top:8px; border-top:1px solid #eee; padding-top:5px;">Tổng: ${bill.total.toLocaleString()}đ</div>
+                </div>`;
+        });
+    }
+
+    function deleteItemInBill(billKey, itemIdx) {
+        if(!confirm("Xóa món này khỏi bill đã thanh toán?")) return;
+        const bill = currentShift.history[billKey];
+        const item = bill.items[itemIdx];
+        const subAmount = (item.price * item.qty);
+        const method = bill.method || 'cash';
+        
+        bill.items.splice(itemIdx, 1);
+        let updates = {};
+        updates['active_shift/history/' + billKey + '/items'] = bill.items;
+        updates['active_shift/history/' + billKey + '/total'] = bill.total - subAmount;
+        updates['active_shift/revenue'] = currentShift.revenue - subAmount;
+        if(method === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) - subAmount;
+        else updates['active_shift/revenueTransfer'] = (currentShift.revenueTransfer||0) - subAmount;
+        
+        db.ref().update(updates);
+    }
+
+    function deleteBill(key) {
+        if(!confirm("Xóa bill này? Tiền sẽ bị trừ vào tổng ca.")) return;
+        const bill = currentShift.history[key];
+        const method = bill.method || 'cash';
+        let updates = {};
+        updates['active_shift/revenue'] = (currentShift.revenue || 0) - bill.total;
+        if(method === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) - bill.total;
+        else updates['active_shift/revenueTransfer'] = (currentShift.revenueTransfer||0) - bill.total;
+        updates['active_shift/history/' + key] = null;
+        db.ref().update(updates);
+    }
+
+    // THỐNG KÊ LỌC
+    function filterStats() {
+        let from = document.getElementById('dateFrom').value, to = document.getElementById('dateTo').value;
+        if(!from || !to) return;
+        db.ref('shift_logs').once('value', s => {
+            let total = 0;
+            Object.values(s.val() || {}).forEach(log => {
+                let p = log.date.split('/'), logD = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+                if(logD >= from && logD <= to) total += log.revenue;
+            });
+            document.getElementById('statFiltered').innerText = total.toLocaleString() + "đ";
+        });
+    }
+
+    // --- POS CORE ---
+    function renderTables() {
+        const container = document.getElementById('list-tables'); container.innerHTML = '';
+        for(let i=1; i<=40; i++) {
+            let t = tablesData[i] || { status: 'white' };
+            container.innerHTML += `<div class="table-card status-${t.status} ${curTable==i?'selected':''}" onclick="selectTable(${i})">BÀN ${i}${t.startTime?`<div class="table-timer">🕒 ${Math.floor((new Date()-new Date(t.startTime))/60000)}p</div>`:''}</div>`;
+        }
+    }
+
+    function selectTable(i) { curTable = i; document.getElementById('lblTable').innerText = "BÀN " + i; showTab('pos'); renderBill(); }
+    function renderMenu() { const m = document.getElementById('list-menu'); m.innerHTML = ''; Object.values(menuData).forEach(it => { m.innerHTML += `<div class="menu-item" onclick="openOpt('${it.name}', ${it.price})">${it.name}<br><span style="color:var(--primary)">${it.price/1000}k</span></div>`; }); }
+    function openOpt(name, price) { if(!curTable) return alert("Chọn bàn!"); tempItem = {name, price}; document.getElementById('optTitle').innerText = name; document.getElementById('optModal').style.display = 'flex'; updateOptUI(); }
+    
+    function confirmAdd() { 
+        let items = tablesData[curTable]?.items || []; 
+        items.unshift({fName: `${tempItem.name} (${curType})${document.getElementById('optNote').value?': '+document.getElementById('optNote').value:''}`, price: tempItem.price, qty: 1, done: false}); 
+        db.ref('tables/'+curTable).update({ items: items, startTime: new Date().toISOString(), status: 'white' }); 
+        closeModal('optModal'); 
+    }
+
+    function renderBill() { 
+        const b = document.getElementById('billItems'); b.innerHTML = ''; let total = 0; 
+        (tablesData[curTable]?.items || []).forEach((it, idx) => { 
+            total += it.price * it.qty; 
+            b.innerHTML += `<div class="bill-row" onclick="openQtyEdit(${idx})"><span class="${!it.done?'item-not-done':''}"><b>${it.qty}x</b> ${it.fName}</span><span>${(it.price * it.qty).toLocaleString()}đ</span></div>`; 
+        }); 
+        document.getElementById('lblTotal').innerText = total.toLocaleString() + "đ"; 
+    }
+
+    function handleConfirm() { if(!curTable) return; db.ref('tables/'+curTable).update({status: 'red'}); showTab('tables'); }
+    function setStatus(s) { if(!curTable) return; let items = tablesData[curTable].items || []; items.forEach(it => it.done = true); db.ref('tables/'+curTable).update({items: items, status: s}); showTab('tables'); }
+
+    function openPayModal() { 
+        if(!curTable || !tablesData[curTable]) return; 
+        const total = parseInt(document.getElementById('lblTotal').innerText.replace(/\D/g,'')); 
+        document.getElementById('payTotal').innerText = total.toLocaleString() + "đ"; 
+        document.getElementById('payModal').style.display = 'flex'; 
+        setPayMethod('cash'); 
+    }
+
+    function handlePay() {
+        const total = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,''));
+        const billData = {
+            time: new Date().toLocaleTimeString('vi-VN'),
+            table: curTable,
+            total: total,
+            method: payMethod,
+            items: tablesData[curTable].items
+        };
+        
+        let updates = {};
+        updates['active_shift/history/' + Date.now()] = billData;
+        updates['active_shift/revenue'] = (currentShift.revenue||0) + total;
+        if(payMethod === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) + total;
+        else updates['active_shift/revenueTransfer'] = (currentShift.revenueTransfer||0) + total;
+        
+        db.ref().update(updates);
+        db.ref('tables/'+curTable).remove();
+        curTable = null; closeModal('payModal'); showTab('tables');
+    }
+
+    function openQtyEdit(idx) { 
+        editIdx = idx; let it = tablesData[curTable].items[idx]; 
+        document.getElementById('qtyName').innerText = it.fName; 
+        document.getElementById('qtyVal').innerText = it.qty; 
+        document.getElementById('qtyModal').style.display = 'flex'; 
+    }
+    function changeQty(v) { let q = parseInt(document.getElementById('qtyVal').innerText) + v; if(q > 0) document.getElementById('qtyVal').innerText = q; }
+    function toggleItemDone() { let items = tablesData[curTable].items; items[editIdx].qty = parseInt(document.getElementById('qtyVal').innerText); items[editIdx].done = true; db.ref('tables/'+curTable).update({items: items}); closeModal('qtyModal'); }
+    function deleteCurrentItem() { let items = tablesData[curTable].items; items.splice(editIdx, 1); db.ref('tables/'+curTable).update({items: items}); closeModal('qtyModal'); }
+
+    function openMoveTable() {
+        if(!curTable) return;
+        const sel = document.getElementById('selectToTable'); sel.innerHTML = '';
+        for(let i=1; i<=40; i++) if(i != curTable) sel.innerHTML += `<option value="${i}">Bàn ${i}</option>`;
+        document.getElementById('moveFrom').innerText = curTable;
+        document.getElementById('moveTableModal').style.display = 'flex';
+    }
+    function handleMoveTable() {
+        let to = document.getElementById('selectToTable').value;
+        db.ref('tables/'+to).set(tablesData[curTable]).then(() => {
+            db.ref('tables/'+curTable).remove(); curTable = to;
+            closeModal('moveTableModal'); renderTables(); renderBill();
+        });
+    }
+
+    function setPayMethod(m) { payMethod = m; document.getElementById('payCashBtn').className = m==='cash'?'opt-btn active':'opt-btn'; document.getElementById('payTransferBtn').className = m==='transfer'?'opt-btn active':'opt-btn'; document.getElementById('cashSection').style.display = m==='cash'?'block':'none'; document.getElementById('transferSection').style.display = m==='transfer'?'block':'none'; document.getElementById('qrDisplay').style.display = (m==='transfer' && qrUrl)?'block':'none'; }
+    
+    function updateShiftUI() { 
+        const s = document.getElementById('shiftSummary'); 
+        if(currentShift) { 
+            s.innerHTML = `
+                Mở lúc: ${currentShift.start}<br>
+                💵 TM: <b>${(currentShift.revenueCash||0).toLocaleString()}đ</b> | 
+                💳 CK: <b>${(currentShift.revenueTransfer||0).toLocaleString()}đ</b><br>
+                Tổng ca: <b style="color:red; font-size:16px;">${(currentShift.revenue||0).toLocaleString()}đ</b>
+            `; 
+            document.getElementById('btnOpen').style.display='none'; 
+            document.getElementById('btnClose').style.display='block'; 
+        } else { 
+            s.innerText = "Chưa mở ca"; 
+            document.getElementById('btnOpen').style.display='block'; 
+            document.getElementById('btnClose').style.display='none'; 
+        } 
+    }
+
+    function saveQR() { db.ref('settings/qrUrl').set(document.getElementById('qrUrlInput').value).then(() => alert("Đã lưu!")); }
+    function showTab(id) { document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('btn-tab-'+id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).style.display='none'; }
+    function updateOptUI() { document.getElementById('optNong').className = curType==='Nóng'?'opt-btn active':'opt-btn'; document.getElementById('optDa').className = curType==='Đá'?'opt-btn active':'opt-btn'; }
+    function calcChange() { let t = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,'')), c = parseInt(document.getElementById('cashIn').value)||0; document.getElementById('cashChange').innerText = (c-t>0?(c-t).toLocaleString():0)+"đ"; }
+    function addMenu() { const n = document.getElementById('inName').value, p = parseInt(document.getElementById('inPrice').value); if(n && p) { db.ref('menu').push({name:n, price:p}); document.getElementById('inName').value=''; document.getElementById('inPrice').value=''; } }
+    function renderAdminMenu() { const d = document.getElementById('adminMenu'); d.innerHTML = ''; Object.keys(menuData).forEach(k => { d.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${menuData[k].name}</span><button onclick="db.ref('menu/${k}').remove()" style="color:red; border:none; background:none; cursor:pointer;">Xóa</button></div>`; }); }
+</script>
+</body>
+</html>
