@@ -170,12 +170,22 @@
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
     db.ref('active_shift').on('value', s => { currentShift = s.val(); updateShiftUI(); renderActiveBills(); });
     db.ref('shift_logs').on('value', s => { renderShiftLogs(s.val()); filterStats(); });
-    db.ref('settings/qrUrl').on('value', s => { qrUrl = s.val() || ""; document.getElementById('qrDisplay').src = qrUrl; document.getElementById('qrUrlInput').value = qrUrl; });
+    db.ref('settings/qrUrl').on('value', s => { 
+        qrUrl = s.val() || ""; 
+        // Xử lý link Google Drive nếu có
+        let displayUrl = qrUrl;
+        if(qrUrl.includes('drive.google.com')){
+            let fileId = qrUrl.split('/d/')[1]?.split('/')[0];
+            if(fileId) displayUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w500`;
+        }
+        document.getElementById('qrDisplay').src = displayUrl; 
+        document.getElementById('qrUrlInput').value = qrUrl; 
+    });
 
     function accessAdmin() { if(prompt("Nhập mật khẩu quản lý:") === "1905") { showTab('admin'); } else { alert("Sai mật khẩu!"); } }
 
     // QUẢN LÝ CA
-    function startShift() { db.ref('active_shift').set({start: new Date().toLocaleString('vi-VN'), revenue: 0}); }
+    function startShift() { db.ref('active_shift').set({start: new Date().toLocaleString('vi-VN'), revenue: 0, revenueCash: 0, revenueTransfer: 0}); }
     
     function endShift() { 
         if(confirm("Xác nhận CHỐT CA? Toàn bộ bàn sẽ được dọn trống.")) { 
@@ -184,6 +194,8 @@
                 end: new Date().toLocaleTimeString('vi-VN'), 
                 date: new Date().toLocaleDateString('vi-VN'), 
                 revenue: currentShift.revenue || 0,
+                revenueCash: currentShift.revenueCash || 0,
+                revenueTransfer: currentShift.revenueTransfer || 0,
                 timestamp: Date.now() 
             }; 
             db.ref('shift_logs').push(data).then(() => { 
@@ -206,6 +218,9 @@
                     <div style="display:flex; justify-content:space-between;">
                         <div><b>📅 ${log.date}</b><br><small>🕒 ${log.start.split(',')[1] || log.start} - ${log.end}</small></div>
                         <button onclick="deleteShiftLog('${key}')" style="background:red; color:white; border:none; border-radius:4px; font-size:10px;">XÓA</button>
+                    </div>
+                    <div style="font-size:11px; margin-top:5px; color:#666;">
+                        TM: ${(log.revenueCash||0).toLocaleString()} | CK: ${(log.revenueTransfer||0).toLocaleString()}
                     </div>
                     <div style="color:var(--danger); font-weight:bold; font-size:15px; margin-top:5px; border-top:1px dashed #ccc;">Tổng: ${log.revenue.toLocaleString()}đ</div>
                 </div>`;
@@ -233,7 +248,7 @@
             list.innerHTML += `
                 <div class="bill-history-card">
                     <div style="margin-bottom:5px;">
-                        <b>Bàn ${bill.table} (${bill.time})</b>
+                        <b>Bàn ${bill.table} (${bill.time}) - ${bill.method === 'transfer' ? '💳 CK' : '💵 TM'}</b>
                         <button style="float:right; color:red; border:none; background:none; font-weight:bold;" onclick="deleteBill('${key}')">XÓA BILL</button>
                     </div>
                     ${itemsHtml}
@@ -246,18 +261,30 @@
         if(!confirm("Xóa món này khỏi bill đã thanh toán?")) return;
         const bill = currentShift.history[billKey];
         const item = bill.items[itemIdx];
-        const newTotal = bill.total - (item.price * item.qty);
-        bill.items.splice(itemIdx, 1);
+        const subAmount = (item.price * item.qty);
+        const method = bill.method || 'cash';
         
-        db.ref('active_shift/history/' + billKey).update({ items: bill.items, total: newTotal });
-        db.ref('active_shift/revenue').set(currentShift.revenue - (item.price * item.qty));
+        bill.items.splice(itemIdx, 1);
+        let updates = {};
+        updates['active_shift/history/' + billKey + '/items'] = bill.items;
+        updates['active_shift/history/' + billKey + '/total'] = bill.total - subAmount;
+        updates['active_shift/revenue'] = currentShift.revenue - subAmount;
+        if(method === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) - subAmount;
+        else updates['active_shift/revenueTransfer'] = (currentShift.revenueTransfer||0) - subAmount;
+        
+        db.ref().update(updates);
     }
 
     function deleteBill(key) {
         if(!confirm("Xóa bill này? Tiền sẽ bị trừ vào tổng ca.")) return;
         const bill = currentShift.history[key];
-        db.ref('active_shift/revenue').set((currentShift.revenue || 0) - bill.total);
-        db.ref('active_shift/history/' + key).remove();
+        const method = bill.method || 'cash';
+        let updates = {};
+        updates['active_shift/revenue'] = (currentShift.revenue || 0) - bill.total;
+        if(method === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) - bill.total;
+        else updates['active_shift/revenueTransfer'] = (currentShift.revenueTransfer||0) - bill.total;
+        updates['active_shift/history/' + key] = null;
+        db.ref().update(updates);
     }
 
     // THỐNG KÊ LỌC
@@ -320,10 +347,17 @@
             time: new Date().toLocaleTimeString('vi-VN'),
             table: curTable,
             total: total,
-            items: tablesData[curTable].items // Lưu chi tiết món vào bill
+            method: payMethod,
+            items: tablesData[curTable].items
         };
-        db.ref('active_shift/history').push(billData);
-        db.ref('active_shift/revenue').set((currentShift.revenue||0) + total);
+        
+        let updates = {};
+        updates['active_shift/history/' + Date.now()] = billData;
+        updates['active_shift/revenue'] = (currentShift.revenue||0) + total;
+        if(payMethod === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) + total;
+        else updates['active_shift/revenueTransfer'] = (currentShift.revenueTransfer||0) + total;
+        
+        db.ref().update(updates);
         db.ref('tables/'+curTable).remove();
         curTable = null; closeModal('payModal'); showTab('tables');
     }
@@ -354,7 +388,25 @@
     }
 
     function setPayMethod(m) { payMethod = m; document.getElementById('payCashBtn').className = m==='cash'?'opt-btn active':'opt-btn'; document.getElementById('payTransferBtn').className = m==='transfer'?'opt-btn active':'opt-btn'; document.getElementById('cashSection').style.display = m==='cash'?'block':'none'; document.getElementById('transferSection').style.display = m==='transfer'?'block':'none'; document.getElementById('qrDisplay').style.display = (m==='transfer' && qrUrl)?'block':'none'; }
-    function updateShiftUI() { const s = document.getElementById('shiftSummary'); if(currentShift) { s.innerHTML = `Mở lúc: ${currentShift.start}<br>Doanh thu: <b style="color:red">${(currentShift.revenue||0).toLocaleString()}đ</b>`; document.getElementById('btnOpen').style.display='none'; document.getElementById('btnClose').style.display='block'; } else { s.innerText = "Chưa mở ca"; document.getElementById('btnOpen').style.display='block'; document.getElementById('btnClose').style.display='none'; } }
+    
+    function updateShiftUI() { 
+        const s = document.getElementById('shiftSummary'); 
+        if(currentShift) { 
+            s.innerHTML = `
+                Mở lúc: ${currentShift.start}<br>
+                💵 TM: <b>${(currentShift.revenueCash||0).toLocaleString()}đ</b> | 
+                💳 CK: <b>${(currentShift.revenueTransfer||0).toLocaleString()}đ</b><br>
+                Tổng ca: <b style="color:red; font-size:16px;">${(currentShift.revenue||0).toLocaleString()}đ</b>
+            `; 
+            document.getElementById('btnOpen').style.display='none'; 
+            document.getElementById('btnClose').style.display='block'; 
+        } else { 
+            s.innerText = "Chưa mở ca"; 
+            document.getElementById('btnOpen').style.display='block'; 
+            document.getElementById('btnClose').style.display='none'; 
+        } 
+    }
+
     function saveQR() { db.ref('settings/qrUrl').set(document.getElementById('qrUrlInput').value).then(() => alert("Đã lưu!")); }
     function showTab(id) { document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('btn-tab-'+id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).style.display='none'; }
@@ -365,4 +417,3 @@
 </script>
 </body>
 </html>
-
