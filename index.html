@@ -22,7 +22,7 @@
         .bill-items-area { flex: 1; overflow-y: auto; background: white; scroll-behavior: smooth; }
         .pos-controls { padding: 10px; background: #eee; border-top: 2px solid #ccc; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex-shrink: 0; }
         .mobile-bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: white; border-top: 2px solid #ddd; z-index: 9999; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
-        .m-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: #666; font-weight: bold; cursor: pointer; }
+        .m-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: #666; font-weight: bold; cursor: pointer; position: relative; }
         .m-btn.active { color: var(--primary); background: #f8f9ff; }
         .table-card { background: white; height: 85px; border: 2px solid #cbd5e0; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; order: 2; }
         .table-card.status-red { border-color: var(--danger); background: #fee2e2; order: 1; }
@@ -42,14 +42,16 @@
         .qr-image-display { width: 100%; max-width: 200px; margin: 10px auto; display: none; }
         .detail-item { display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-top: 2px; border-bottom: 1px dotted #eee; }
         
-        /* FIX: CSS CHO TAB CHAT ĐỂ KHÔNG BỊ CHE KHUẤT */
-        #tab-chat { padding-bottom: 60px; } /* Đẩy nội dung lên trên thanh Bottom Nav */
+        #tab-chat { padding-bottom: 60px; } 
         .chat-msg { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 13px; word-wrap: break-word; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
         .chat-msg.mine { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 3px; }
         .chat-msg.other { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 3px; border: 1px solid #ddd; }
         .chat-sender { font-size: 11px; color: gray; margin-bottom: 4px; font-weight: bold; margin-left: 5px;}
         .chat-time { font-size: 9px; opacity: 0.8; margin-top: 5px; text-align: right; }
         .chat-input-area { display:flex; padding:10px; background:white; align-items:center; gap:10px; border-top: 1px solid #eee; }
+
+        /* PHẦN SỬA 1: CSS CHO THÔNG BÁO SỐ ĐỎ */
+        .chat-badge { position: absolute; top: 5px; right: 20%; background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; display: none; }
     </style>
 </head>
 <body>
@@ -167,7 +169,10 @@
 <div class="mobile-bottom-nav">
     <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
     <div class="m-btn" id="btn-tab-pos" onclick="showTab('pos')">☕ POS</div>
-    <div class="m-btn" id="btn-tab-chat" onclick="showTab('chat'); initChat();">💬 CHAT</div>
+    <div class="m-btn" id="btn-tab-chat" onclick="showTab('chat'); initChat();">
+        💬 CHAT
+        <span id="chat-badge" class="chat-badge">0</span>
+    </div>
 </div>
 
 <script>
@@ -182,6 +187,10 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // PHẦN SỬA 1: BIẾN QUẢN LÝ TIN NHẮN CHƯA ĐỌC
+    let unreadCount = 0;
+    let currentTab = 'tables';
 
     let curTable = null, menuData = {}, tablesData = {}, currentShift = null, curType = 'Đá', tempItem = null, editIdx = null, payMethod = 'cash', qrUrl = "";
 
@@ -203,28 +212,22 @@
     function accessAdmin() { if(prompt("Nhập mật khẩu quản lý:") === "1905") { showTab('admin'); } else { alert("Sai mật khẩu!"); } }
     function startShift() { db.ref('active_shift').set({start: new Date().toLocaleString('vi-VN'), revenue: 0, revenueCash: 0, revenueTransfer: 0}); }
     
-    // --- FIX: ĐỒNG BỘ KHÓA DỮ LIỆU VỚI APPS SCRIPT ---
     function endShift() { 
         if(!currentShift) return alert("Không có ca nào đang mở!");
         if(confirm("Xác nhận CHỐT CA? Toàn bộ bàn sẽ được dọn trống và dữ liệu sẽ được xuất ra báo cáo Google Sheets.")) { 
          let chiTietHoaDon = "";
 if (currentShift.history) {
-    // Duyệt qua từng hóa đơn trong ca
     Object.values(currentShift.history).forEach((bill) => {
-        // Duyệt qua từng món trong mỗi hóa đơn
         bill.items.forEach(it => {
             let thanhTienMon = it.price * it.qty;
-            // Tạo dòng: Tên món xSố lượng  Thành tiền (xuống dòng bằng \n)
             chiTietHoaDon += `${it.fName} x${it.qty}  ${thanhTienMon.toLocaleString()}đ\n`;
         });
     });
-    // Loại bỏ dấu xuống dòng thừa ở cuối cùng
     chiTietHoaDon = chiTietHoaDon.trim();
 } else { 
     chiTietHoaDon = "Không có đơn hàng"; 
 }
 
-            // Gói dữ liệu chuẩn theo Apps Script (Image 1)
             const payload = {
                 ngayThang: new Date().toLocaleDateString('vi-VN'),
                 dienGiai: chiTietHoaDon,
@@ -332,6 +335,10 @@ if (currentShift.history) {
         let items = tablesData[curTable]?.items || []; 
         items.unshift({fName: `${tempItem.name} (${curType})${document.getElementById('optNote').value?': '+document.getElementById('optNote').value:''}`, price: tempItem.price, qty: 1, done: false}); 
         db.ref('tables/'+curTable).update({ items: items, startTime: new Date().toISOString(), status: 'white' }); 
+        
+        // PHẦN SỬA 2: XÓA TRẮNG Ô GHI CHÚ SAU KHI THÊM
+        document.getElementById('optNote').value = '';
+        
         closeModal('optModal'); 
     }
 
@@ -402,37 +409,73 @@ if (currentShift.history) {
     }
 
     function saveQR() { db.ref('settings/qrUrl').set(document.getElementById('qrUrlInput').value).then(() => alert("Đã lưu!")); }
-    function showTab(id) { document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('btn-tab-'+id).classList.add('active'); }
+
+    // PHẦN SỬA 1: CẬP NHẬT SHOWTAB ĐỂ RESET SỐ ĐỎ KHI VÀO CHAT
+    function showTab(id) { 
+        currentTab = id; 
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); 
+        document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active')); 
+        document.getElementById('tab-'+id).classList.add('active'); 
+        document.getElementById('btn-tab-'+id).classList.add('active'); 
+        
+        if (id === 'chat') { unreadCount = 0; updateBadge(); }
+    }
+
     function closeModal(id) { document.getElementById(id).style.display='none'; }
     function updateOptUI() { document.getElementById('optNong').className = curType==='Nóng'?'opt-btn active':'opt-btn'; document.getElementById('optDa').className = curType==='Đá'?'opt-btn active':'opt-btn'; }
     function calcChange() { let t = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,'')), c = parseInt(document.getElementById('cashIn').value)||0; document.getElementById('cashChange').innerText = (c-t>0?(c-t).toLocaleString():0)+"đ"; }
     function addMenu() { const n = document.getElementById('inName').value, p = parseInt(document.getElementById('inPrice').value); if(n && p) { db.ref('menu').push({name:n, price:p}); document.getElementById('inName').value=''; document.getElementById('inPrice').value=''; } }
     function renderAdminMenu() { const d = document.getElementById('adminMenu'); d.innerHTML = ''; Object.keys(menuData).forEach(k => { d.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${menuData[k].name}</span><button onclick="db.ref('menu/${k}').remove()" style="color:red; border:none; background:none;">Xóa</button></div>`; }); }
 
-    // --- LOGIC CHAT (ĐÃ FIX CHE KHUẤT) ---
+    // PHẦN SỬA 1: LOGIC CHAT VÀ THÔNG BÁO SỐ ĐỎ
     let myChatName = localStorage.getItem('uyencoffee_chatName'), chatLoaded = false;
+    let lastMsgCount = 0;
+
     function initChat() {
         if(!myChatName) { document.getElementById('chatNameSetup').style.display = 'block'; document.getElementById('chatInterface').style.display = 'none'; } 
         else { document.getElementById('chatNameSetup').style.display = 'none'; document.getElementById('chatInterface').style.display = 'flex'; if(!chatLoaded) loadChat(); }
     }
+
     function saveChatName() { const n = document.getElementById('chatNameInput').value.trim(); if(!n) return alert("Vui lòng nhập tên!"); localStorage.setItem('uyencoffee_chatName', n); myChatName = n; initChat(); }
+
+    function updateBadge() {
+        const badge = document.getElementById('chat-badge');
+        if (unreadCount > 0) { badge.innerText = unreadCount; badge.style.display = 'block'; } 
+        else { badge.style.display = 'none'; }
+    }
+
+    // Tải tin nhắn và xử lý đếm tin chưa đọc
     function loadChat() {
         chatLoaded = true;
         db.ref('group_chats').on('value', s => {
-            const msgs = s.val() || {}, box = document.getElementById('chatMessages'); box.innerHTML = '';
-            Object.values(msgs).forEach(m => {
+            const msgs = s.val() || {}, box = document.getElementById('chatMessages'); 
+            const msgArray = Object.values(msgs);
+            
+            // Xử lý đếm tin nhắn mới nếu đang ở Tab khác
+            if (lastMsgCount > 0 && msgArray.length > lastMsgCount && currentTab !== 'chat') {
+                unreadCount += (msgArray.length - lastMsgCount);
+                updateBadge();
+            }
+            lastMsgCount = msgArray.length;
+
+            box.innerHTML = '';
+            msgArray.forEach(m => {
                 const isMine = (m.sender === myChatName);
                 box.innerHTML += `<div style="align-self: ${isMine ? 'flex-end' : 'flex-start'}; display: flex; flex-direction: column;">${!isMine ? `<div class="chat-sender">${m.sender}</div>` : ''}<div class="chat-msg ${isMine ? 'mine' : 'other'}">${m.text}<div class="chat-time">${m.time}</div></div></div>`;
             });
             box.scrollTop = box.scrollHeight;
         });
     }
+
     function sendChatMessage() {
         const input = document.getElementById('chatInput'), txt = input.value.trim();
         if(!txt) return;
         db.ref('group_chats').push({ sender: myChatName, text: txt, time: new Date().toLocaleTimeString('vi-VN').substring(0, 5) });
         input.value = '';
     }
+
+    // Khởi động lắng nghe tin nhắn ngầm để hiện số đỏ ngay cả khi chưa bấm vào tab chat lần nào
+    if (myChatName) { loadChat(); }
 </script>
 </body>
 </html>
