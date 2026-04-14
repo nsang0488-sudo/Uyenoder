@@ -41,6 +41,13 @@
         .opt-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         .qr-image-display { width: 100%; max-width: 200px; margin: 10px auto; display: none; }
         .detail-item { display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-top: 2px; border-bottom: 1px dotted #eee; }
+        
+        /* CSS CHO TAB CHAT */
+        .chat-msg { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 13px; word-wrap: break-word; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
+        .chat-msg.mine { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 3px; }
+        .chat-msg.other { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 3px; border: 1px solid #ddd; }
+        .chat-sender { font-size: 11px; color: gray; margin-bottom: 4px; font-weight: bold; margin-left: 5px;}
+        .chat-time { font-size: 9px; opacity: 0.8; margin-top: 5px; text-align: right; }
     </style>
 </head>
 <body>
@@ -69,6 +76,24 @@
                 <button onclick="setStatus('green')" style="background:var(--success); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; font-size:11px;">XONG HẾT</button>
                 <button onclick="openPayModal()" style="grid-column: span 2; background:var(--dark); color:white; border:none; padding:80px; border-radius:8px; font-weight:bold;">THANH TOÁN</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="tab-chat" class="tab-content" style="flex-direction: column; background: #e5ddd5;">
+    <div id="chatNameSetup" style="display:none; padding:20px; text-align:center; margin-top:50px; background: white; margin: 20px; border-radius: 10px;">
+        <h3 style="color: var(--primary)">Nhập tên thiết bị để Chat</h3>
+        <p style="font-size: 12px; color: gray;">Tên này sẽ hiển thị trong nhóm (VD: Quầy, Uyên, NV1...)</p>
+        <input type="text" id="chatNameInput" placeholder="Nhập tên của bạn..." style="width:100%; padding:15px; border:2px solid var(--primary); border-radius:10px; margin-bottom:15px;">
+        <button onclick="saveChatName()" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold;">VÀO NHÓM CHAT</button>
+    </div>
+    
+    <div id="chatInterface" style="display:none; flex-direction:column; height:100%;">
+        <div id="chatMessages" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:12px; padding-bottom:20px;">
+            </div>
+        <div style="display:flex; padding:10px; background:white; align-items:center; gap:10px;">
+            <input type="text" id="chatInput" placeholder="Nhập tin nhắn..." style="flex:1; padding:15px; border:1px solid #ccc; border-radius:25px; outline:none;" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+            <button onclick="sendChatMessage()" style="background:var(--primary); color:white; border:none; border-radius:50%; width:45px; height:45px; font-weight:bold; cursor:pointer;">➤</button>
         </div>
     </div>
 </div>
@@ -148,6 +173,7 @@
 <div class="mobile-bottom-nav">
     <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
     <div class="m-btn" id="btn-tab-pos" onclick="showTab('pos')">☕ POS</div>
+    <div class="m-btn" id="btn-tab-chat" onclick="showTab('chat'); initChat();">💬 CHAT</div>
 </div>
 
 <script>
@@ -172,7 +198,6 @@
     db.ref('shift_logs').on('value', s => { renderShiftLogs(s.val()); filterStats(); });
     db.ref('settings/qrUrl').on('value', s => { 
         qrUrl = s.val() || ""; 
-        // Xử lý link Google Drive nếu có
         let displayUrl = qrUrl;
         if(qrUrl.includes('drive.google.com')){
             let fileId = qrUrl.split('/d/')[1]?.split('/')[0];
@@ -184,11 +209,43 @@
 
     function accessAdmin() { if(prompt("Nhập mật khẩu quản lý:") === "1905") { showTab('admin'); } else { alert("Sai mật khẩu!"); } }
 
-    // QUẢN LÝ CA
     function startShift() { db.ref('active_shift').set({start: new Date().toLocaleString('vi-VN'), revenue: 0, revenueCash: 0, revenueTransfer: 0}); }
     
+    // --- HÀM ENDSHIFT ĐÃ CẬP NHẬT ĐỂ GỬI GOOGLE SHEETS ---
     function endShift() { 
-        if(confirm("Xác nhận CHỐT CA? Toàn bộ bàn sẽ được dọn trống.")) { 
+        if(!currentShift) return alert("Không có ca nào đang mở!");
+        
+        if(confirm("Xác nhận CHỐT CA? Toàn bộ bàn sẽ được dọn trống và dữ liệu sẽ được xuất ra báo cáo Google Sheets.")) { 
+            
+            // 1. Gom chi tiết từng Bill
+            let chiTietHoaDon = "";
+            if (currentShift.history) {
+                Object.values(currentShift.history).forEach((bill, index) => {
+                    let items = bill.items.map(it => `${it.qty}x ${it.fName}`).join(', ');
+                    chiTietHoaDon += `[Bill ${index + 1}] Bàn ${bill.table} (${bill.time}): ${items} | `;
+                });
+            } else {
+                chiTietHoaDon = "Không có đơn hàng";
+            }
+
+            // 2. Tạo gói dữ liệu cho Google Sheets
+            const payload = {
+                ngayThang: new Date().toLocaleString('vi-VN'),
+                dienGiai: chiTietHoaDon,
+                hinhThuc: `TM: ${(currentShift.revenueCash || 0).toLocaleString()}đ | CK: ${(currentShift.revenueTransfer || 0).toLocaleString()}đ`,
+                soTien: currentShift.revenue || 0
+            };
+
+            // 3. Bắn dữ liệu sang Google Sheets theo Link bạn cung cấp
+            const scriptUrl = "https://script.google.com/macros/s/AKfycbwmGsse5rPmnEgpb7yw9-GtIsLjNvdbpL6ZES_CnChPs_j95sxO9qahLFjR9NiJsos/exec";
+            fetch(scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(e => console.log("Lỗi xuất Sheets: ", e));
+
+            // 4. Lưu lại ca vào Firebase & dọn bàn (Giữ nguyên logic cũ của bạn)
             const data = { 
                 start: currentShift.start,
                 end: new Date().toLocaleTimeString('vi-VN'), 
@@ -201,6 +258,7 @@
             db.ref('shift_logs').push(data).then(() => { 
                 db.ref('active_shift').remove(); 
                 db.ref('tables').remove(); 
+                alert("Đã chốt ca thành công và dữ liệu đã được đẩy qua báo cáo Thuế!");
             }); 
         } 
     }
@@ -227,7 +285,6 @@
         });
     }
 
-    // HIỂN THỊ BILL ĐÃ THANH TOÁN (CHI TIẾT MÓN)
     function renderActiveBills() {
         const section = document.getElementById('activeBillSection');
         const list = document.getElementById('activeBillsList');
@@ -287,7 +344,6 @@
         db.ref().update(updates);
     }
 
-    // THỐNG KÊ LỌC
     function filterStats() {
         let from = document.getElementById('dateFrom').value, to = document.getElementById('dateTo').value;
         if(!from || !to) return;
@@ -301,7 +357,6 @@
         });
     }
 
-    // --- POS CORE ---
     function renderTables() {
         const container = document.getElementById('list-tables'); container.innerHTML = '';
         for(let i=1; i<=40; i++) {
@@ -414,6 +469,71 @@
     function calcChange() { let t = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,'')), c = parseInt(document.getElementById('cashIn').value)||0; document.getElementById('cashChange').innerText = (c-t>0?(c-t).toLocaleString():0)+"đ"; }
     function addMenu() { const n = document.getElementById('inName').value, p = parseInt(document.getElementById('inPrice').value); if(n && p) { db.ref('menu').push({name:n, price:p}); document.getElementById('inName').value=''; document.getElementById('inPrice').value=''; } }
     function renderAdminMenu() { const d = document.getElementById('adminMenu'); d.innerHTML = ''; Object.keys(menuData).forEach(k => { d.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${menuData[k].name}</span><button onclick="db.ref('menu/${k}').remove()" style="color:red; border:none; background:none; cursor:pointer;">Xóa</button></div>`; }); }
+
+    // ==========================================
+    // LOGIC CHO TAB CHAT MỚI
+    // ==========================================
+    let myChatName = localStorage.getItem('uyencoffee_chatName');
+    let chatLoaded = false;
+
+    function initChat() {
+        if(!myChatName) {
+            document.getElementById('chatNameSetup').style.display = 'block';
+            document.getElementById('chatInterface').style.display = 'none';
+        } else {
+            document.getElementById('chatNameSetup').style.display = 'none';
+            document.getElementById('chatInterface').style.display = 'flex';
+            if(!chatLoaded) loadChat();
+        }
+    }
+
+    function saveChatName() {
+        const n = document.getElementById('chatNameInput').value.trim();
+        if(!n) return alert("Vui lòng nhập tên để vào nhóm!");
+        localStorage.setItem('uyencoffee_chatName', n);
+        myChatName = n;
+        initChat();
+    }
+
+    function loadChat() {
+        chatLoaded = true;
+        // Lắng nghe tin nhắn mới từ Firebase
+        db.ref('group_chats').on('value', s => {
+            const msgs = s.val() || {};
+            const box = document.getElementById('chatMessages');
+            box.innerHTML = '';
+            
+            Object.values(msgs).forEach(m => {
+                const isMine = (m.sender === myChatName);
+                box.innerHTML += `
+                    <div style="align-self: ${isMine ? 'flex-end' : 'flex-start'}; display: flex; flex-direction: column;">
+                        ${!isMine ? `<div class="chat-sender">${m.sender}</div>` : ''}
+                        <div class="chat-msg ${isMine ? 'mine' : 'other'}">
+                            ${m.text}
+                            <div class="chat-time">${m.time}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            // Tự động cuộn xuống cuối cùng khi có tin nhắn mới
+            box.scrollTop = box.scrollHeight;
+        });
+    }
+
+    function sendChatMessage() {
+        const input = document.getElementById('chatInput');
+        const txt = input.value.trim();
+        if(!txt) return;
+        
+        // Đẩy tin nhắn lên Firebase
+        db.ref('group_chats').push({
+            sender: myChatName,
+            text: txt,
+            time: new Date().toLocaleTimeString('vi-VN').substring(0, 5) // Lấy giờ phút, ví dụ "08:30"
+        });
+        
+        input.value = ''; // Xóa ô nhập sau khi gửi
+    }
 </script>
 </body>
 </html>
