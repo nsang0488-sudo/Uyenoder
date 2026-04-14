@@ -207,13 +207,22 @@
     function endShift() { 
         if(!currentShift) return alert("Không có ca nào đang mở!");
         if(confirm("Xác nhận CHỐT CA? Toàn bộ bàn sẽ được dọn trống và dữ liệu sẽ được xuất ra báo cáo Google Sheets.")) { 
-            let chiTietHoaDon = "";
-            if (currentShift.history) {
-                Object.values(currentShift.history).forEach((bill, index) => {
-                    let items = bill.items.map(it => `${it.qty}x ${it.fName}`).join(', ');
-                    chiTietHoaDon += `[Bill ${index + 1}] Bàn ${bill.table} (${bill.time}): ${items} | `;
-                });
-            } else { chiTietHoaDon = "Không có đơn hàng"; }
+         let chiTietHoaDon = "";
+if (currentShift.history) {
+    // Duyệt qua từng hóa đơn trong ca
+    Object.values(currentShift.history).forEach((bill) => {
+        // Duyệt qua từng món trong mỗi hóa đơn
+        bill.items.forEach(it => {
+            let thanhTienMon = it.price * it.qty;
+            // Tạo dòng: Tên món xSố lượng  Thành tiền (xuống dòng bằng \n)
+            chiTietHoaDon += `${it.fName} x${it.qty}  ${thanhTienMon.toLocaleString()}đ\n`;
+        });
+    });
+    // Loại bỏ dấu xuống dòng thừa ở cuối cùng
+    chiTietHoaDon = chiTietHoaDon.trim();
+} else { 
+    chiTietHoaDon = "Không có đơn hàng"; 
+}
 
             // Gói dữ liệu chuẩn theo Apps Script (Image 1)
             const payload = {
