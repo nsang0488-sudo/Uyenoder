@@ -9,11 +9,11 @@
     <style>
         :root { --primary: #5d3fd3; --success: #28a745; --danger: #dc3545; --dark: #2c3e50; --bg: #f4f7f6; --warning: #ffc107; }
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background: var(--bg); height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         .navbar { background: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-shrink: 0; }
         .nav-item { padding: 8px 12px; cursor: pointer; border-radius: 5px; font-size: 12px; font-weight: bold; background: #f0f0f0; border: none; }
         .nav-item.active { background: var(--primary); color: white; }
-        .tab-content { display: none; flex: 1; overflow: hidden; position: relative; padding-bottom: 65px; }
+        .tab-content { display: none; flex: 1; overflow: hidden; position: relative; padding-bottom: 60px; }
         .tab-content.active { display: flex; }
         .tables-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; padding: 15px; overflow-y: auto; align-content: start; }
         .order-container { display: flex; width: 100%; height: 100%; background: white; overflow: hidden; }
@@ -42,12 +42,14 @@
         .qr-image-display { width: 100%; max-width: 200px; margin: 10px auto; display: none; }
         .detail-item { display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-top: 2px; border-bottom: 1px dotted #eee; }
         
-        /* CSS CHO TAB CHAT */
+        /* FIX: CSS CHO TAB CHAT ĐỂ KHÔNG BỊ CHE KHUẤT */
+        #tab-chat { padding-bottom: 60px; } /* Đẩy nội dung lên trên thanh Bottom Nav */
         .chat-msg { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 13px; word-wrap: break-word; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
         .chat-msg.mine { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 3px; }
         .chat-msg.other { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 3px; border: 1px solid #ddd; }
         .chat-sender { font-size: 11px; color: gray; margin-bottom: 4px; font-weight: bold; margin-left: 5px;}
         .chat-time { font-size: 9px; opacity: 0.8; margin-top: 5px; text-align: right; }
+        .chat-input-area { display:flex; padding:10px; background:white; align-items:center; gap:10px; border-top: 1px solid #eee; }
     </style>
 </head>
 <body>
@@ -74,7 +76,7 @@
             <div class="pos-controls">
                 <button onclick="handleConfirm()" style="background:var(--danger); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; font-size:11px;">XÁC NHẬN</button>
                 <button onclick="setStatus('green')" style="background:var(--success); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; font-size:11px;">XONG HẾT</button>
-                <button onclick="openPayModal()" style="grid-column: span 2; background:var(--dark); color:white; border:none; padding:80px; border-radius:8px; font-weight:bold;">THANH TOÁN</button>
+                <button onclick="openPayModal()" style="grid-column: span 2; background:var(--dark); color:white; border:none; padding:15px; border-radius:8px; font-weight:bold;">THANH TOÁN</button>
             </div>
         </div>
     </div>
@@ -83,17 +85,15 @@
 <div id="tab-chat" class="tab-content" style="flex-direction: column; background: #e5ddd5;">
     <div id="chatNameSetup" style="display:none; padding:20px; text-align:center; margin-top:50px; background: white; margin: 20px; border-radius: 10px;">
         <h3 style="color: var(--primary)">Nhập tên thiết bị để Chat</h3>
-        <p style="font-size: 12px; color: gray;">Tên này sẽ hiển thị trong nhóm (VD: Quầy, Uyên, NV1...)</p>
         <input type="text" id="chatNameInput" placeholder="Nhập tên của bạn..." style="width:100%; padding:15px; border:2px solid var(--primary); border-radius:10px; margin-bottom:15px;">
         <button onclick="saveChatName()" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold;">VÀO NHÓM CHAT</button>
     </div>
     
     <div id="chatInterface" style="display:none; flex-direction:column; height:100%;">
-        <div id="chatMessages" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:12px; padding-bottom:20px;">
-            </div>
-        <div style="display:flex; padding:10px; background:white; align-items:center; gap:10px;">
+        <div id="chatMessages" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:12px;"></div>
+        <div class="chat-input-area">
             <input type="text" id="chatInput" placeholder="Nhập tin nhắn..." style="flex:1; padding:15px; border:1px solid #ccc; border-radius:25px; outline:none;" onkeypress="if(event.key === 'Enter') sendChatMessage()">
-            <button onclick="sendChatMessage()" style="background:var(--primary); color:white; border:none; border-radius:50%; width:45px; height:45px; font-weight:bold; cursor:pointer;">➤</button>
+            <button onclick="sendChatMessage()" style="background:var(--primary); color:white; border:none; border-radius:50%; width:45px; height:45px; font-weight:bold;">➤</button>
         </div>
     </div>
 </div>
@@ -101,7 +101,6 @@
 <div id="tab-admin" class="tab-content">
     <div style="padding:15px; width:100%; overflow-y:auto; padding-bottom:100px;">
         <h2>Quản Lý Doanh Thu</h2>
-        
         <div class="admin-section">
             <h3>📊 Thống Kê Tổng</h3>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
@@ -112,30 +111,25 @@
                 Tổng lọc: <span id="statFiltered" style="color:var(--danger)">0đ</span>
             </div>
         </div>
-
         <div class="admin-section" id="activeBillSection" style="display:none;">
             <h3>🧾 Bill Trong Ca Hiện Tại</h3>
             <div id="activeBillsList"></div>
         </div>
-
         <div class="admin-section">
             <h3>📦 Trạng Thái Ca</h3>
             <div id="shiftSummary" style="margin-bottom:10px; padding:10px; background:#f0f0f0; border-radius:5px; font-size:13px;">Chưa mở ca</div>
             <button onclick="startShift()" id="btnOpen" style="width:100%;padding:12px;background:var(--success);color:white;border:none;border-radius:8px;font-weight:bold;">MỞ CA MỚI</button>
             <button onclick="endShift()" id="btnClose" style="width:100%;padding:12px;background:var(--danger);color:white;border:none;border-radius:8px;display:none;font-weight:bold;">CHỐT CA (ĐÓNG CA)</button>
         </div>
-
         <div class="admin-section">
             <h3>📜 Lịch Sử Ca Đã Chốt</h3>
             <div id="shiftLogsList" style="max-height: 400px; overflow-y: auto;"></div>
         </div>
-
         <div class="admin-section">
             <h3>🖼️ Cài Đặt QR</h3>
             <input type="text" id="qrUrlInput" placeholder="Link ảnh QR..." style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ddd;">
             <button onclick="saveQR()" style="width:100%;padding:10px;background:var(--dark);color:white;border:none;border-radius:5px;">LƯU QR</button>
         </div>
-
         <div class="admin-section">
             <h3>📝 Menu</h3>
             <input id="inName" placeholder="Tên món" style="width:100%;padding:10px;margin-bottom:5px;border:1px solid #ddd;">
@@ -191,7 +185,6 @@
 
     let curTable = null, menuData = {}, tablesData = {}, currentShift = null, curType = 'Đá', tempItem = null, editIdx = null, payMethod = 'cash', qrUrl = "";
 
-    // Lắng nghe dữ liệu
     db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
     db.ref('active_shift').on('value', s => { currentShift = s.val(); updateShiftUI(); renderActiveBills(); });
@@ -208,47 +201,39 @@
     });
 
     function accessAdmin() { if(prompt("Nhập mật khẩu quản lý:") === "1905") { showTab('admin'); } else { alert("Sai mật khẩu!"); } }
-
     function startShift() { db.ref('active_shift').set({start: new Date().toLocaleString('vi-VN'), revenue: 0, revenueCash: 0, revenueTransfer: 0}); }
     
-    // --- HÀM ENDSHIFT ĐÃ CẬP NHẬT ĐỂ GỬI GOOGLE SHEETS ---
+    // --- FIX: ĐỒNG BỘ KHÓA DỮ LIỆU VỚI APPS SCRIPT ---
     function endShift() { 
         if(!currentShift) return alert("Không có ca nào đang mở!");
-        
         if(confirm("Xác nhận CHỐT CA? Toàn bộ bàn sẽ được dọn trống và dữ liệu sẽ được xuất ra báo cáo Google Sheets.")) { 
-            
-            // 1. Gom chi tiết từng Bill
             let chiTietHoaDon = "";
             if (currentShift.history) {
                 Object.values(currentShift.history).forEach((bill, index) => {
                     let items = bill.items.map(it => `${it.qty}x ${it.fName}`).join(', ');
                     chiTietHoaDon += `[Bill ${index + 1}] Bàn ${bill.table} (${bill.time}): ${items} | `;
                 });
-            } else {
-                chiTietHoaDon = "Không có đơn hàng";
-            }
+            } else { chiTietHoaDon = "Không có đơn hàng"; }
 
-            // 2. Tạo gói dữ liệu cho Google Sheets
+            // Gói dữ liệu chuẩn theo Apps Script (Image 1)
             const payload = {
-                ngayThang: new Date().toLocaleString('vi-VN'),
+                ngayThang: new Date().toLocaleDateString('vi-VN'),
                 dienGiai: chiTietHoaDon,
-                hinhThuc: `TM: ${(currentShift.revenueCash || 0).toLocaleString()}đ | CK: ${(currentShift.revenueTransfer || 0).toLocaleString()}đ`,
+                hinhThucThanhToan: `TM: ${(currentShift.revenueCash || 0).toLocaleString()}đ | CK: ${(currentShift.revenueTransfer || 0).toLocaleString()}đ`,
                 soTien: currentShift.revenue || 0
             };
 
-            // 3. Bắn dữ liệu sang Google Sheets theo Link bạn cung cấp
             const scriptUrl = "https://script.google.com/macros/s/AKfycbwmGsse5rPmnEgpb7yw9-GtIsLjNvdbpL6ZES_CnChPs_j95sxO9qahLFjR9NiJsos/exec";
+            
             fetch(scriptUrl, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
-            }).catch(e => console.log("Lỗi xuất Sheets: ", e));
+            }).then(() => console.log("Đã gửi lệnh xuất Sheets")).catch(e => alert("Lỗi gửi Sheets: " + e));
 
-            // 4. Lưu lại ca vào Firebase & dọn bàn (Giữ nguyên logic cũ của bạn)
             const data = { 
-                start: currentShift.start,
-                end: new Date().toLocaleTimeString('vi-VN'), 
+                start: currentShift.start, end: new Date().toLocaleTimeString('vi-VN'), 
                 date: new Date().toLocaleDateString('vi-VN'), 
                 revenue: currentShift.revenue || 0,
                 revenueCash: currentShift.revenueCash || 0,
@@ -258,69 +243,36 @@
             db.ref('shift_logs').push(data).then(() => { 
                 db.ref('active_shift').remove(); 
                 db.ref('tables').remove(); 
-                alert("Đã chốt ca thành công và dữ liệu đã được đẩy qua báo cáo Thuế!");
+                alert("Đã chốt ca thành công!");
             }); 
         } 
     }
 
     function deleteShiftLog(key) { if(confirm("Bạn muốn xóa vĩnh viễn lịch sử ca này?")) db.ref('shift_logs/' + key).remove(); }
-
     function renderShiftLogs(logs) {
-        const list = document.getElementById('shiftLogsList');
-        list.innerHTML = '';
+        const list = document.getElementById('shiftLogsList'); list.innerHTML = '';
         if(!logs) { list.innerHTML = '<p style="color:gray; text-align:center;">Chưa có ca nào được chốt.</p>'; return; }
         Object.keys(logs).reverse().forEach(key => {
             const log = logs[key];
-            list.innerHTML += `
-                <div class="shift-log-card">
-                    <div style="display:flex; justify-content:space-between;">
-                        <div><b>📅 ${log.date}</b><br><small>🕒 ${log.start.split(',')[1] || log.start} - ${log.end}</small></div>
-                        <button onclick="deleteShiftLog('${key}')" style="background:red; color:white; border:none; border-radius:4px; font-size:10px;">XÓA</button>
-                    </div>
-                    <div style="font-size:11px; margin-top:5px; color:#666;">
-                        TM: ${(log.revenueCash||0).toLocaleString()} | CK: ${(log.revenueTransfer||0).toLocaleString()}
-                    </div>
-                    <div style="color:var(--danger); font-weight:bold; font-size:15px; margin-top:5px; border-top:1px dashed #ccc;">Tổng: ${log.revenue.toLocaleString()}đ</div>
-                </div>`;
+            list.innerHTML += `<div class="shift-log-card"><div style="display:flex; justify-content:space-between;"><div><b>📅 ${log.date}</b><br><small>🕒 ${log.start.split(',')[1] || log.start} - ${log.end}</small></div><button onclick="deleteShiftLog('${key}')" style="background:red; color:white; border:none; border-radius:4px; font-size:10px;">XÓA</button></div><div style="font-size:11px; margin-top:5px; color:#666;">TM: ${(log.revenueCash||0).toLocaleString()} | CK: ${(log.revenueTransfer||0).toLocaleString()}</div><div style="color:var(--danger); font-weight:bold; font-size:15px; margin-top:5px; border-top:1px dashed #ccc;">Tổng: ${log.revenue.toLocaleString()}đ</div></div>`;
         });
     }
 
     function renderActiveBills() {
         const section = document.getElementById('activeBillSection');
-        const list = document.getElementById('activeBillsList');
-        list.innerHTML = '';
+        const list = document.getElementById('activeBillsList'); list.innerHTML = '';
         if(!currentShift || !currentShift.history) { section.style.display = 'none'; return; }
         section.style.display = 'block';
         Object.keys(currentShift.history).reverse().forEach(key => {
             const bill = currentShift.history[key];
-            let itemsHtml = (bill.items || []).map((it, idx) => `
-                <div class="detail-item">
-                    <span>${it.qty}x ${it.fName}</span>
-                    <span>${(it.price * it.qty).toLocaleString()}đ 
-                        <span style="color:red; cursor:pointer;" onclick="deleteItemInBill('${key}', ${idx})"> (X)</span>
-                    </span>
-                </div>
-            `).join('');
-
-            list.innerHTML += `
-                <div class="bill-history-card">
-                    <div style="margin-bottom:5px;">
-                        <b>Bàn ${bill.table} (${bill.time}) - ${bill.method === 'transfer' ? '💳 CK' : '💵 TM'}</b>
-                        <button style="float:right; color:red; border:none; background:none; font-weight:bold;" onclick="deleteBill('${key}')">XÓA BILL</button>
-                    </div>
-                    ${itemsHtml}
-                    <div style="color:var(--primary); font-weight:bold; margin-top:8px; border-top:1px solid #eee; padding-top:5px;">Tổng: ${bill.total.toLocaleString()}đ</div>
-                </div>`;
+            let itemsHtml = (bill.items || []).map((it, idx) => `<div class="detail-item"><span>${it.qty}x ${it.fName}</span><span>${(it.price * it.qty).toLocaleString()}đ <span style="color:red; cursor:pointer;" onclick="deleteItemInBill('${key}', ${idx})"> (X)</span></span></div>`).join('');
+            list.innerHTML += `<div class="bill-history-card"><div style="margin-bottom:5px;"><b>Bàn ${bill.table} (${bill.time}) - ${bill.method === 'transfer' ? '💳 CK' : '💵 TM'}</b><button style="float:right; color:red; border:none; background:none; font-weight:bold;" onclick="deleteBill('${key}')">XÓA BILL</button></div>${itemsHtml}<div style="color:var(--primary); font-weight:bold; margin-top:8px; border-top:1px solid #eee; padding-top:5px;">Tổng: ${bill.total.toLocaleString()}đ</div></div>`;
         });
     }
 
     function deleteItemInBill(billKey, itemIdx) {
         if(!confirm("Xóa món này khỏi bill đã thanh toán?")) return;
-        const bill = currentShift.history[billKey];
-        const item = bill.items[itemIdx];
-        const subAmount = (item.price * item.qty);
-        const method = bill.method || 'cash';
-        
+        const bill = currentShift.history[billKey], item = bill.items[itemIdx], subAmount = (item.price * item.qty), method = bill.method || 'cash';
         bill.items.splice(itemIdx, 1);
         let updates = {};
         updates['active_shift/history/' + billKey + '/items'] = bill.items;
@@ -328,14 +280,12 @@
         updates['active_shift/revenue'] = currentShift.revenue - subAmount;
         if(method === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) - subAmount;
         else updates['active_shift/revenueTransfer'] = (currentShift.revenueTransfer||0) - subAmount;
-        
         db.ref().update(updates);
     }
 
     function deleteBill(key) {
-        if(!confirm("Xóa bill này? Tiền sẽ bị trừ vào tổng ca.")) return;
-        const bill = currentShift.history[key];
-        const method = bill.method || 'cash';
+        if(!confirm("Xóa bill này?")) return;
+        const bill = currentShift.history[key], method = bill.method || 'cash';
         let updates = {};
         updates['active_shift/revenue'] = (currentShift.revenue || 0) - bill.total;
         if(method === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) - bill.total;
@@ -398,20 +348,12 @@
 
     function handlePay() {
         const total = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,''));
-        const billData = {
-            time: new Date().toLocaleTimeString('vi-VN'),
-            table: curTable,
-            total: total,
-            method: payMethod,
-            items: tablesData[curTable].items
-        };
-        
+        const billData = { time: new Date().toLocaleTimeString('vi-VN'), table: curTable, total: total, method: payMethod, items: tablesData[curTable].items };
         let updates = {};
         updates['active_shift/history/' + Date.now()] = billData;
         updates['active_shift/revenue'] = (currentShift.revenue||0) + total;
         if(payMethod === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) + total;
         else updates['active_shift/revenueTransfer'] = (currentShift.revenueTransfer||0) + total;
-        
         db.ref().update(updates);
         db.ref('tables/'+curTable).remove();
         curTable = null; closeModal('payModal'); showTab('tables');
@@ -437,29 +379,17 @@
     function handleMoveTable() {
         let to = document.getElementById('selectToTable').value;
         db.ref('tables/'+to).set(tablesData[curTable]).then(() => {
-            db.ref('tables/'+curTable).remove(); curTable = to;
-            closeModal('moveTableModal'); renderTables(); renderBill();
+            db.ref('tables/'+curTable).remove(); curTable = to; closeModal('moveTableModal'); renderTables(); renderBill();
         });
     }
 
     function setPayMethod(m) { payMethod = m; document.getElementById('payCashBtn').className = m==='cash'?'opt-btn active':'opt-btn'; document.getElementById('payTransferBtn').className = m==='transfer'?'opt-btn active':'opt-btn'; document.getElementById('cashSection').style.display = m==='cash'?'block':'none'; document.getElementById('transferSection').style.display = m==='transfer'?'block':'none'; document.getElementById('qrDisplay').style.display = (m==='transfer' && qrUrl)?'block':'none'; }
-    
     function updateShiftUI() { 
         const s = document.getElementById('shiftSummary'); 
         if(currentShift) { 
-            s.innerHTML = `
-                Mở lúc: ${currentShift.start}<br>
-                💵 TM: <b>${(currentShift.revenueCash||0).toLocaleString()}đ</b> | 
-                💳 CK: <b>${(currentShift.revenueTransfer||0).toLocaleString()}đ</b><br>
-                Tổng ca: <b style="color:red; font-size:16px;">${(currentShift.revenue||0).toLocaleString()}đ</b>
-            `; 
-            document.getElementById('btnOpen').style.display='none'; 
-            document.getElementById('btnClose').style.display='block'; 
-        } else { 
-            s.innerText = "Chưa mở ca"; 
-            document.getElementById('btnOpen').style.display='block'; 
-            document.getElementById('btnClose').style.display='none'; 
-        } 
+            s.innerHTML = `Mở lúc: ${currentShift.start}<br>💵 TM: <b>${(currentShift.revenueCash||0).toLocaleString()}đ</b> | 💳 CK: <b>${(currentShift.revenueTransfer||0).toLocaleString()}đ</b><br>Tổng ca: <b style="color:red; font-size:16px;">${(currentShift.revenue||0).toLocaleString()}đ</b>`; 
+            document.getElementById('btnOpen').style.display='none'; document.getElementById('btnClose').style.display='block'; 
+        } else { s.innerText = "Chưa mở ca"; document.getElementById('btnOpen').style.display='block'; document.getElementById('btnClose').style.display='none'; } 
     }
 
     function saveQR() { db.ref('settings/qrUrl').set(document.getElementById('qrUrlInput').value).then(() => alert("Đã lưu!")); }
@@ -468,71 +398,31 @@
     function updateOptUI() { document.getElementById('optNong').className = curType==='Nóng'?'opt-btn active':'opt-btn'; document.getElementById('optDa').className = curType==='Đá'?'opt-btn active':'opt-btn'; }
     function calcChange() { let t = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,'')), c = parseInt(document.getElementById('cashIn').value)||0; document.getElementById('cashChange').innerText = (c-t>0?(c-t).toLocaleString():0)+"đ"; }
     function addMenu() { const n = document.getElementById('inName').value, p = parseInt(document.getElementById('inPrice').value); if(n && p) { db.ref('menu').push({name:n, price:p}); document.getElementById('inName').value=''; document.getElementById('inPrice').value=''; } }
-    function renderAdminMenu() { const d = document.getElementById('adminMenu'); d.innerHTML = ''; Object.keys(menuData).forEach(k => { d.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${menuData[k].name}</span><button onclick="db.ref('menu/${k}').remove()" style="color:red; border:none; background:none; cursor:pointer;">Xóa</button></div>`; }); }
+    function renderAdminMenu() { const d = document.getElementById('adminMenu'); d.innerHTML = ''; Object.keys(menuData).forEach(k => { d.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${menuData[k].name}</span><button onclick="db.ref('menu/${k}').remove()" style="color:red; border:none; background:none;">Xóa</button></div>`; }); }
 
-    // ==========================================
-    // LOGIC CHO TAB CHAT MỚI
-    // ==========================================
-    let myChatName = localStorage.getItem('uyencoffee_chatName');
-    let chatLoaded = false;
-
+    // --- LOGIC CHAT (ĐÃ FIX CHE KHUẤT) ---
+    let myChatName = localStorage.getItem('uyencoffee_chatName'), chatLoaded = false;
     function initChat() {
-        if(!myChatName) {
-            document.getElementById('chatNameSetup').style.display = 'block';
-            document.getElementById('chatInterface').style.display = 'none';
-        } else {
-            document.getElementById('chatNameSetup').style.display = 'none';
-            document.getElementById('chatInterface').style.display = 'flex';
-            if(!chatLoaded) loadChat();
-        }
+        if(!myChatName) { document.getElementById('chatNameSetup').style.display = 'block'; document.getElementById('chatInterface').style.display = 'none'; } 
+        else { document.getElementById('chatNameSetup').style.display = 'none'; document.getElementById('chatInterface').style.display = 'flex'; if(!chatLoaded) loadChat(); }
     }
-
-    function saveChatName() {
-        const n = document.getElementById('chatNameInput').value.trim();
-        if(!n) return alert("Vui lòng nhập tên để vào nhóm!");
-        localStorage.setItem('uyencoffee_chatName', n);
-        myChatName = n;
-        initChat();
-    }
-
+    function saveChatName() { const n = document.getElementById('chatNameInput').value.trim(); if(!n) return alert("Vui lòng nhập tên!"); localStorage.setItem('uyencoffee_chatName', n); myChatName = n; initChat(); }
     function loadChat() {
         chatLoaded = true;
-        // Lắng nghe tin nhắn mới từ Firebase
         db.ref('group_chats').on('value', s => {
-            const msgs = s.val() || {};
-            const box = document.getElementById('chatMessages');
-            box.innerHTML = '';
-            
+            const msgs = s.val() || {}, box = document.getElementById('chatMessages'); box.innerHTML = '';
             Object.values(msgs).forEach(m => {
                 const isMine = (m.sender === myChatName);
-                box.innerHTML += `
-                    <div style="align-self: ${isMine ? 'flex-end' : 'flex-start'}; display: flex; flex-direction: column;">
-                        ${!isMine ? `<div class="chat-sender">${m.sender}</div>` : ''}
-                        <div class="chat-msg ${isMine ? 'mine' : 'other'}">
-                            ${m.text}
-                            <div class="chat-time">${m.time}</div>
-                        </div>
-                    </div>
-                `;
+                box.innerHTML += `<div style="align-self: ${isMine ? 'flex-end' : 'flex-start'}; display: flex; flex-direction: column;">${!isMine ? `<div class="chat-sender">${m.sender}</div>` : ''}<div class="chat-msg ${isMine ? 'mine' : 'other'}">${m.text}<div class="chat-time">${m.time}</div></div></div>`;
             });
-            // Tự động cuộn xuống cuối cùng khi có tin nhắn mới
             box.scrollTop = box.scrollHeight;
         });
     }
-
     function sendChatMessage() {
-        const input = document.getElementById('chatInput');
-        const txt = input.value.trim();
+        const input = document.getElementById('chatInput'), txt = input.value.trim();
         if(!txt) return;
-        
-        // Đẩy tin nhắn lên Firebase
-        db.ref('group_chats').push({
-            sender: myChatName,
-            text: txt,
-            time: new Date().toLocaleTimeString('vi-VN').substring(0, 5) // Lấy giờ phút, ví dụ "08:30"
-        });
-        
-        input.value = ''; // Xóa ô nhập sau khi gửi
+        db.ref('group_chats').push({ sender: myChatName, text: txt, time: new Date().toLocaleTimeString('vi-VN').substring(0, 5) });
+        input.value = '';
     }
 </script>
 </body>
