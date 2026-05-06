@@ -10,7 +10,10 @@
         :root { --primary: #5d3fd3; --success: #28a745; --danger: #dc3545; --dark: #2c3e50; --bg: #f4f7f6; --warning: #ffc107; }
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: var(--bg); height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-        .navbar { background: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-shrink: 0; }
+        
+        /* Đã thêm position và z-index để navbar luôn hiện lên trên màn hình khóa */
+        .navbar { position: relative; z-index: 1000000; background: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-shrink: 0; }
+        
         .nav-item { padding: 8px 12px; cursor: pointer; border-radius: 5px; font-size: 12px; font-weight: bold; background: #f0f0f0; border: none; }
         .nav-item.active { background: var(--primary); color: white; }
         .tab-content { display: none; flex: 1; overflow: hidden; position: relative; padding-bottom: 60px; }
@@ -197,6 +200,7 @@
     
     // Biến cho phần bảo mật thiết bị
     let currentRegCode = "";
+    let isAdmin = false; // Đánh dấu nếu đang là Admin thì không hiện popup khóa màn hình
 
     // ---------------- LOGIC BẢO MẬT & QUẢN LÝ THIẾT BỊ ----------------
     db.ref('settings/regCode').on('value', s => {
@@ -211,10 +215,11 @@
     });
 
     function checkDeviceAuth(devices) {
+        if (isAdmin) return; // Bỏ qua bước kiểm tra khóa nếu bạn đã đăng nhập Admin
+        
         const myDevId = localStorage.getItem('uc_dev_id');
         const myDevPass = localStorage.getItem('uc_dev_pass');
         
-        // Nếu không có thông tin ở local hoặc tài khoản đã bị admin xóa / đổi pass
         if (!myDevId || !devices[myDevId] || devices[myDevId].password !== myDevPass) {
             document.getElementById('authOverlay').style.display = 'flex';
         } else {
@@ -299,7 +304,17 @@
         document.getElementById('qrUrlInput').value = qrUrl; 
     });
 
-    function accessAdmin() { if(prompt("Nhập mật khẩu quản lý:") === "1905") { showTab('admin'); } else { alert("Sai mật khẩu!"); } }
+    // Cập nhật hàm truy cập Admin để ẩn màn hình khóa khi đúng pass
+    function accessAdmin() { 
+        if(prompt("Nhập mật khẩu quản lý:") === "1905") { 
+            isAdmin = true; 
+            document.getElementById('authOverlay').style.display = 'none';
+            showTab('admin'); 
+        } else { 
+            alert("Sai mật khẩu!"); 
+        } 
+    }
+
     function startShift() { db.ref('active_shift').set({start: new Date().toLocaleString('vi-VN'), revenue: 0, revenueCash: 0, revenueTransfer: 0}); }
     
     function endShift() { 
