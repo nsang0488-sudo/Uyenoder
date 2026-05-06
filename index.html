@@ -42,19 +42,27 @@
         .qr-image-display { width: 100%; max-width: 200px; margin: 10px auto; display: none; }
         .detail-item { display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-top: 2px; border-bottom: 1px dotted #eee; }
         
-        #tab-chat { padding-bottom: 60px; } 
-        .chat-msg { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 13px; word-wrap: break-word; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
-        .chat-msg.mine { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 3px; }
-        .chat-msg.other { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 3px; border: 1px solid #ddd; }
-        .chat-sender { font-size: 11px; color: gray; margin-bottom: 4px; font-weight: bold; margin-left: 5px;}
-        .chat-time { font-size: 9px; opacity: 0.8; margin-top: 5px; text-align: right; }
-        .chat-input-area { display:flex; padding:10px; background:white; align-items:center; gap:10px; border-top: 1px solid #eee; }
-
-        /* PHẦN SỬA 1: CSS CHO THÔNG BÁO SỐ ĐỎ */
-        .chat-badge { position: absolute; top: 5px; right: 20%; background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; display: none; }
+        /* CSS cho màn hình đăng ký thiết bị */
+        #authOverlay { background: var(--bg); display: flex; flex-direction: column; z-index: 999999; }
+        .auth-container { background: white; padding: 30px 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 320px; text-align: center; }
+        .auth-input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+        .auth-input:focus { border-color: var(--primary); }
+        .dev-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #ddd; font-size: 13px; }
     </style>
 </head>
 <body>
+
+<!-- MÀN HÌNH BẢO MẬT ĐĂNG KÝ THIẾT BỊ -->
+<div id="authOverlay" class="modal-overlay">
+    <div class="auth-container">
+        <h2 style="color: var(--primary); margin-top: 0;">KÍCH HOẠT THIẾT BỊ</h2>
+        <p style="font-size: 12px; color: gray; margin-bottom: 20px;">Vui lòng nhập mã đăng ký do quản lý cấp để sử dụng hệ thống.</p>
+        <input type="text" id="regName" class="auth-input" placeholder="Tên nhân viên (VD: Lan Anh)">
+        <input type="password" id="regPass" class="auth-input" placeholder="Tạo mật khẩu cá nhân">
+        <input type="number" id="regCode" class="auth-input" placeholder="Mã đăng ký (5 số)" oninput="if(this.value.length > 5) this.value = this.value.slice(0,5);">
+        <button onclick="registerDevice()" style="width: 100%; background: var(--primary); color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;">ĐĂNG KÝ VÀ VÀO CA</button>
+    </div>
+</div>
 
 <div class="navbar">
     <div style="font-weight: 900; color: var(--primary);">UYÊN COFFEE</div>
@@ -84,25 +92,25 @@
     </div>
 </div>
 
-<div id="tab-chat" class="tab-content" style="flex-direction: column; background: #e5ddd5;">
-    <div id="chatNameSetup" style="display:none; padding:20px; text-align:center; margin-top:50px; background: white; margin: 20px; border-radius: 10px;">
-        <h3 style="color: var(--primary)">Nhập tên thiết bị để Chat</h3>
-        <input type="text" id="chatNameInput" placeholder="Nhập tên của bạn..." style="width:100%; padding:15px; border:2px solid var(--primary); border-radius:10px; margin-bottom:15px;">
-        <button onclick="saveChatName()" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold;">VÀO NHÓM CHAT</button>
-    </div>
-    
-    <div id="chatInterface" style="display:none; flex-direction:column; height:100%;">
-        <div id="chatMessages" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:12px;"></div>
-        <div class="chat-input-area">
-            <input type="text" id="chatInput" placeholder="Nhập tin nhắn..." style="flex:1; padding:15px; border:1px solid #ccc; border-radius:25px; outline:none;" onkeypress="if(event.key === 'Enter') sendChatMessage()">
-            <button onclick="sendChatMessage()" style="background:var(--primary); color:white; border:none; border-radius:50%; width:45px; height:45px; font-weight:bold;">➤</button>
-        </div>
-    </div>
-</div>
-
 <div id="tab-admin" class="tab-content">
     <div style="padding:15px; width:100%; overflow-y:auto; padding-bottom:100px;">
-        <h2>Quản Lý Doanh Thu</h2>
+        <h2>Khu Vực Quản Lý</h2>
+        
+        <!-- PHẦN MỚI: QUẢN LÝ THIẾT BỊ -->
+        <div class="admin-section">
+            <h3>📱 Quản Lý Thiết Bị</h3>
+            <div id="deviceList" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
+            
+            <div style="background: #f8f9ff; padding: 15px; border-radius: 8px; border: 1px dashed var(--primary); text-align: center;">
+                <p style="margin: 0 0 5px 0; font-size: 12px; color: #555;">Mã đăng ký cấp cho nhân viên tạo tài khoản:</p>
+                <b id="displayRegCode" style="font-size: 28px; color: var(--primary); letter-spacing: 5px;">-----</b>
+                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                    <button onclick="generateNewCode()" style="flex:1; padding:10px; background:var(--warning); color:black; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">MÃ MỚI</button>
+                    <button onclick="copyCode()" style="flex:1; padding:10px; background:var(--dark); color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">SAO CHÉP</button>
+                </div>
+            </div>
+        </div>
+
         <div class="admin-section">
             <h3>📊 Thống Kê Tổng</h3>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
@@ -169,10 +177,6 @@
 <div class="mobile-bottom-nav">
     <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
     <div class="m-btn" id="btn-tab-pos" onclick="showTab('pos')">☕ POS</div>
-    <div class="m-btn" id="btn-tab-chat" onclick="showTab('chat'); initChat();">
-        💬 CHAT
-        <span id="chat-badge" class="chat-badge">0</span>
-    </div>
 </div>
 
 <script>
@@ -188,11 +192,97 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // PHẦN SỬA 1: BIẾN QUẢN LÝ TIN NHẮN CHƯA ĐỌC
-    let unreadCount = 0;
     let currentTab = 'tables';
-
     let curTable = null, menuData = {}, tablesData = {}, currentShift = null, curType = 'Đá', tempItem = null, editIdx = null, payMethod = 'cash', qrUrl = "";
+    
+    // Biến cho phần bảo mật thiết bị
+    let currentRegCode = "";
+
+    // ---------------- LOGIC BẢO MẬT & QUẢN LÝ THIẾT BỊ ----------------
+    db.ref('settings/regCode').on('value', s => {
+        currentRegCode = s.val() || "Chưa có";
+        document.getElementById('displayRegCode').innerText = currentRegCode;
+    });
+
+    db.ref('devices').on('value', s => {
+        const devices = s.val() || {};
+        renderDevicesList(devices);
+        checkDeviceAuth(devices);
+    });
+
+    function checkDeviceAuth(devices) {
+        const myDevId = localStorage.getItem('uc_dev_id');
+        const myDevPass = localStorage.getItem('uc_dev_pass');
+        
+        // Nếu không có thông tin ở local hoặc tài khoản đã bị admin xóa / đổi pass
+        if (!myDevId || !devices[myDevId] || devices[myDevId].password !== myDevPass) {
+            document.getElementById('authOverlay').style.display = 'flex';
+        } else {
+            document.getElementById('authOverlay').style.display = 'none';
+        }
+    }
+
+    function registerDevice() {
+        const name = document.getElementById('regName').value.trim();
+        const pass = document.getElementById('regPass').value.trim();
+        const code = document.getElementById('regCode').value.trim();
+
+        if (!name || !pass || !code) return alert("Vui lòng điền đầy đủ thông tin!");
+        if (code !== String(currentRegCode)) return alert("Mã đăng ký không chính xác hoặc đã hết hạn!");
+
+        const newDevId = 'DEV_' + Date.now();
+        db.ref('devices/' + newDevId).set({
+            name: name,
+            password: pass,
+            createdAt: new Date().toLocaleString('vi-VN')
+        }).then(() => {
+            localStorage.setItem('uc_dev_id', newDevId);
+            localStorage.setItem('uc_dev_pass', pass);
+            document.getElementById('authOverlay').style.display = 'none';
+            alert("Đăng ký thành công! Thiết bị của bạn đã được ghi nhớ.");
+        });
+    }
+
+    function renderDevicesList(devices) {
+        const list = document.getElementById('deviceList');
+        list.innerHTML = '';
+        if(Object.keys(devices).length === 0) {
+            list.innerHTML = '<p style="color:gray; font-size:13px; text-align:center;">Chưa có thiết bị nào đăng ký.</p>';
+            return;
+        }
+        Object.keys(devices).forEach(key => {
+            const dev = devices[key];
+            list.innerHTML += `
+                <div class="dev-item">
+                    <div><b>👤 ${dev.name}</b><br><span style="color:gray; font-size:10px;">Ngày tạo: ${dev.createdAt}</span></div>
+                    <button onclick="deleteDevice('${key}')" style="background:var(--danger); color:white; border:none; padding:6px 12px; border-radius:5px; font-weight:bold; font-size:11px; cursor:pointer;">XOÁ</button>
+                </div>
+            `;
+        });
+    }
+
+    function deleteDevice(key) {
+        if (confirm("Xoá tài khoản này? Thiết bị của nhân viên này sẽ lập tức bị văng ra trang đăng nhập.")) {
+            db.ref('devices/' + key).remove();
+        }
+    }
+
+    function generateNewCode() {
+        const newCode = Math.floor(10000 + Math.random() * 90000).toString();
+        if(confirm("Tạo mã đăng ký mới? (Mã cũ sẽ không còn hiệu lực)")) {
+            db.ref('settings/regCode').set(newCode);
+        }
+    }
+
+    function copyCode() {
+        if(currentRegCode === "Chưa có") return alert("Hãy tạo mã mới trước!");
+        navigator.clipboard.writeText(currentRegCode).then(() => {
+            alert("Đã sao chép mã: " + currentRegCode);
+        }).catch(err => {
+            alert("Lỗi sao chép, bạn có thể tự bôi đen và copy.");
+        });
+    }
+    // ---------------- KẾT THÚC LOGIC BẢO MẬT ----------------
 
     db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
@@ -216,17 +306,17 @@
         if(!currentShift) return alert("Không có ca nào đang mở!");
         if(confirm("Xác nhận CHỐT CA? Toàn bộ bàn sẽ được dọn trống và dữ liệu sẽ được xuất ra báo cáo Google Sheets.")) { 
          let chiTietHoaDon = "";
-if (currentShift.history) {
-    Object.values(currentShift.history).forEach((bill) => {
-        bill.items.forEach(it => {
-            let thanhTienMon = it.price * it.qty;
-            chiTietHoaDon += `${it.fName} x${it.qty}  ${thanhTienMon.toLocaleString()}đ\n`;
-        });
-    });
-    chiTietHoaDon = chiTietHoaDon.trim();
-} else { 
-    chiTietHoaDon = "Không có đơn hàng"; 
-}
+        if (currentShift.history) {
+            Object.values(currentShift.history).forEach((bill) => {
+                bill.items.forEach(it => {
+                    let thanhTienMon = it.price * it.qty;
+                    chiTietHoaDon += `${it.fName} x${it.qty}  ${thanhTienMon.toLocaleString()}đ\n`;
+                });
+            });
+            chiTietHoaDon = chiTietHoaDon.trim();
+        } else { 
+            chiTietHoaDon = "Không có đơn hàng"; 
+        }
 
             const payload = {
                 ngayThang: new Date().toLocaleDateString('vi-VN'),
@@ -336,9 +426,7 @@ if (currentShift.history) {
         items.unshift({fName: `${tempItem.name} (${curType})${document.getElementById('optNote').value?': '+document.getElementById('optNote').value:''}`, price: tempItem.price, qty: 1, done: false}); 
         db.ref('tables/'+curTable).update({ items: items, startTime: new Date().toISOString(), status: 'white' }); 
         
-        // PHẦN SỬA 2: XÓA TRẮNG Ô GHI CHÚ SAU KHI THÊM
         document.getElementById('optNote').value = '';
-        
         closeModal('optModal'); 
     }
 
@@ -410,15 +498,12 @@ if (currentShift.history) {
 
     function saveQR() { db.ref('settings/qrUrl').set(document.getElementById('qrUrlInput').value).then(() => alert("Đã lưu!")); }
 
-    // PHẦN SỬA 1: CẬP NHẬT SHOWTAB ĐỂ RESET SỐ ĐỎ KHI VÀO CHAT
     function showTab(id) { 
         currentTab = id; 
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); 
         document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active')); 
         document.getElementById('tab-'+id).classList.add('active'); 
-        document.getElementById('btn-tab-'+id).classList.add('active'); 
-        
-        if (id === 'chat') { unreadCount = 0; updateBadge(); }
+        if(document.getElementById('btn-tab-'+id)) document.getElementById('btn-tab-'+id).classList.add('active'); 
     }
 
     function closeModal(id) { document.getElementById(id).style.display='none'; }
@@ -427,55 +512,6 @@ if (currentShift.history) {
     function addMenu() { const n = document.getElementById('inName').value, p = parseInt(document.getElementById('inPrice').value); if(n && p) { db.ref('menu').push({name:n, price:p}); document.getElementById('inName').value=''; document.getElementById('inPrice').value=''; } }
     function renderAdminMenu() { const d = document.getElementById('adminMenu'); d.innerHTML = ''; Object.keys(menuData).forEach(k => { d.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${menuData[k].name}</span><button onclick="db.ref('menu/${k}').remove()" style="color:red; border:none; background:none;">Xóa</button></div>`; }); }
 
-    // PHẦN SỬA 1: LOGIC CHAT VÀ THÔNG BÁO SỐ ĐỎ
-    let myChatName = localStorage.getItem('uyencoffee_chatName'), chatLoaded = false;
-    let lastMsgCount = 0;
-
-    function initChat() {
-        if(!myChatName) { document.getElementById('chatNameSetup').style.display = 'block'; document.getElementById('chatInterface').style.display = 'none'; } 
-        else { document.getElementById('chatNameSetup').style.display = 'none'; document.getElementById('chatInterface').style.display = 'flex'; if(!chatLoaded) loadChat(); }
-    }
-
-    function saveChatName() { const n = document.getElementById('chatNameInput').value.trim(); if(!n) return alert("Vui lòng nhập tên!"); localStorage.setItem('uyencoffee_chatName', n); myChatName = n; initChat(); }
-
-    function updateBadge() {
-        const badge = document.getElementById('chat-badge');
-        if (unreadCount > 0) { badge.innerText = unreadCount; badge.style.display = 'block'; } 
-        else { badge.style.display = 'none'; }
-    }
-
-    // Tải tin nhắn và xử lý đếm tin chưa đọc
-    function loadChat() {
-        chatLoaded = true;
-        db.ref('group_chats').on('value', s => {
-            const msgs = s.val() || {}, box = document.getElementById('chatMessages'); 
-            const msgArray = Object.values(msgs);
-            
-            // Xử lý đếm tin nhắn mới nếu đang ở Tab khác
-            if (lastMsgCount > 0 && msgArray.length > lastMsgCount && currentTab !== 'chat') {
-                unreadCount += (msgArray.length - lastMsgCount);
-                updateBadge();
-            }
-            lastMsgCount = msgArray.length;
-
-            box.innerHTML = '';
-            msgArray.forEach(m => {
-                const isMine = (m.sender === myChatName);
-                box.innerHTML += `<div style="align-self: ${isMine ? 'flex-end' : 'flex-start'}; display: flex; flex-direction: column;">${!isMine ? `<div class="chat-sender">${m.sender}</div>` : ''}<div class="chat-msg ${isMine ? 'mine' : 'other'}">${m.text}<div class="chat-time">${m.time}</div></div></div>`;
-            });
-            box.scrollTop = box.scrollHeight;
-        });
-    }
-
-    function sendChatMessage() {
-        const input = document.getElementById('chatInput'), txt = input.value.trim();
-        if(!txt) return;
-        db.ref('group_chats').push({ sender: myChatName, text: txt, time: new Date().toLocaleTimeString('vi-VN').substring(0, 5) });
-        input.value = '';
-    }
-
-    // Khởi động lắng nghe tin nhắn ngầm để hiện số đỏ ngay cả khi chưa bấm vào tab chat lần nào
-    if (myChatName) { loadChat(); }
 </script>
 </body>
 </html>
