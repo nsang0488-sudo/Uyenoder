@@ -51,11 +51,16 @@
         .auth-input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
         .auth-input:focus { border-color: var(--primary); }
         .dev-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #ddd; font-size: 13px; }
+
+        /* CSS bổ sung cho tính năng Giao việc */
+        .task-card { background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .task-text { font-size: 14px; transition: all 0.2s; }
+        .task-important { color: var(--danger); font-weight: bold; }
+        .task-done-text { text-decoration: line-through; color: #aaa !important; font-weight: normal !important; }
     </style>
 </head>
 <body>
 
-<!-- MÀN HÌNH BẢO MẬT ĐĂNG KÝ THIẾT BỊ -->
 <div id="authOverlay" class="modal-overlay">
     <div class="auth-container">
         <h2 style="color: var(--primary); margin-top: 0;">KÍCH HOẠT THIẾT BỊ</h2>
@@ -95,14 +100,48 @@
     </div>
 </div>
 
+<div id="tab-tasks" class="tab-content">
+    <div style="padding:15px; width:100%; overflow-y:auto; padding-bottom:100px;">
+        
+        <div id="managerTaskArea" style="display: none;">
+            <h2>📋 Quản Lý Giao Việc</h2>
+            <div class="admin-section">
+                <h3>Chọn nhân viên:</h3>
+                <select id="taskEmployeeSelect" onchange="loadTasksForManager()" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; font-weight:bold; outline:none;"></select>
+            </div>
+            
+            <div class="admin-section">
+                <h3>Thêm công việc mới</h3>
+                <input type="text" id="taskContentInput" placeholder="Nhập tên việc cần làm..." style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                    <input type="checkbox" id="taskImportantInput" style="width:18px; height:18px; cursor:pointer;">
+                    <label for="taskImportantInput" style="font-size:13px; font-weight:bold; color:var(--danger); cursor:pointer;">Việc quan trọng (Đánh dấu chữ đỏ)</label>
+                </div>
+                <button onclick="addTaskByManager()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">PHÂN VIỆC</button>
+            </div>
+            
+            <div class="admin-section">
+                <h3>Danh sách công việc đang giao</h3>
+                <div id="managerTaskListContainer"></div>
+            </div>
+        </div>
+
+        <div id="employeeTaskArea" style="display: none;">
+            <h2 style="margin-bottom:5px;">📋 Công Việc Của Bạn</h2>
+            <p style="font-size:13px; color:gray; margin-top:0; margin-bottom:20px;">Tích chọn vào ô vuông bên cạnh khi bạn đã hoàn thành công việc.</p>
+            <div id="employeeTaskListContainer"></div>
+        </div>
+
+    </div>
+</div>
+
 <div id="tab-admin" class="tab-content">
     <div style="padding:15px; width:100%; overflow-y:auto; padding-bottom:100px;">
         <h2>Khu Vực Quản Lý</h2>
         
-        <!-- PHẦN MỚI: QUẢN LÝ THIẾT BỊ -->
         <div class="admin-section">
-            <h3>📱 Quản Lý Thiết Bị</h3>
-            <div id="deviceList" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
+            <h3>📱 Quản Lý Thiết Bị & Quyền Nhân Viên</h3>
+            <div id="deviceList" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
             
             <div style="background: #f8f9ff; padding: 15px; border-radius: 8px; border: 1px dashed var(--primary); text-align: center;">
                 <p style="margin: 0 0 5px 0; font-size: 12px; color: #555;">Mã đăng ký cấp cho nhân viên tạo tài khoản:</p>
@@ -180,6 +219,7 @@
 <div class="mobile-bottom-nav">
     <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
     <div class="m-btn" id="btn-tab-pos" onclick="showTab('pos')">☕ POS</div>
+    <div class="m-btn" id="btn-tab-tasks" onclick="showTab('tasks')">📋 VIỆC</div>
 </div>
 
 <script>
@@ -198,9 +238,10 @@
     let currentTab = 'tables';
     let curTable = null, menuData = {}, tablesData = {}, currentShift = null, curType = 'Đá', tempItem = null, editIdx = null, payMethod = 'cash', qrUrl = "";
     
-    // Biến cho phần bảo mật thiết bị
+    // Biến cho phần bảo mật thiết bị & phân quyền
     let currentRegCode = "";
-    let isAdmin = false; // Đánh dấu nếu đang là Admin thì không hiện popup khóa màn hình
+    let isAdmin = false; 
+    let allDevicesData = {}; 
 
     // ---------------- LOGIC BẢO MẬT & QUẢN LÝ THIẾT BỊ ----------------
     db.ref('settings/regCode').on('value', s => {
@@ -209,13 +250,14 @@
     });
 
     db.ref('devices').on('value', s => {
-        const devices = s.val() || {};
-        renderDevicesList(devices);
-        checkDeviceAuth(devices);
+        allDevicesData = s.val() || {};
+        renderDevicesList(allDevicesData);
+        checkDeviceAuth(allDevicesData);
+        updateTasksViewDropdown();
     });
 
     function checkDeviceAuth(devices) {
-        if (isAdmin) return; // Bỏ qua bước kiểm tra khóa nếu bạn đã đăng nhập Admin
+        if (isAdmin) return; // Nếu đăng nhập bằng mã Admin thì không khóa màn hình
         
         const myDevId = localStorage.getItem('uc_dev_id');
         const myDevPass = localStorage.getItem('uc_dev_pass');
@@ -225,6 +267,16 @@
         } else {
             document.getElementById('authOverlay').style.display = 'none';
         }
+    }
+
+    // Hàm xác định quyền hiện tại của thiết bị
+    function getUserRole() {
+        if (isAdmin) return "Quản lý";
+        const myDevId = localStorage.getItem('uc_dev_id');
+        if (myDevId && allDevicesData[myDevId]) {
+            return allDevicesData[myDevId].role || "Phục vụ";
+        }
+        return "Phục vụ";
     }
 
     function registerDevice() {
@@ -239,15 +291,17 @@
         db.ref('devices/' + newDevId).set({
             name: name,
             password: pass,
+            role: 'Phục vụ', // Tự động cấp quyền Phục vụ khi đăng ký mới
             createdAt: new Date().toLocaleString('vi-VN')
         }).then(() => {
             localStorage.setItem('uc_dev_id', newDevId);
             localStorage.setItem('uc_dev_pass', pass);
             document.getElementById('authOverlay').style.display = 'none';
-            alert("Đăng ký thành công! Thiết bị của bạn đã được ghi nhớ.");
+            alert("Đăng ký thành công! Quyền mặc định của bạn là Phục vụ.");
         });
     }
 
+    // Kết xuất danh sách thiết bị có thêm ô chọn quyền cấu hình trực tiếp
     function renderDevicesList(devices) {
         const list = document.getElementById('deviceList');
         list.innerHTML = '';
@@ -257,12 +311,27 @@
         }
         Object.keys(devices).forEach(key => {
             const dev = devices[key];
+            const currentRole = dev.role || 'Phục vụ';
             list.innerHTML += `
                 <div class="dev-item">
-                    <div><b>👤 ${dev.name}</b><br><span style="color:gray; font-size:10px;">Ngày tạo: ${dev.createdAt}</span></div>
+                    <div>
+                        <b>👤 ${dev.name}</b><br>
+                        <span style="color:gray; font-size:10px;">Ngày tạo: ${dev.createdAt}</span><br>
+                        <select onchange="updateDeviceRole('${key}', this.value)" style="margin-top:5px; padding:4px; font-size:12px; border-radius:4px; font-weight:bold;">
+                            <option value="Phục vụ" ${currentRole === 'Phục vụ' ? 'selected' : ''}>Phục vụ (Không thể tính tiền)</option>
+                            <option value="Thu ngân" ${currentRole === 'Thu ngân' ? 'selected' : ''}>Thu ngân (Được tính tiền)</option>
+                            <option value="Quản lý" ${currentRole === 'Quản lý' ? 'selected' : ''}>Quản lý (Có mọi quyền)</option>
+                        </select>
+                    </div>
                     <button onclick="deleteDevice('${key}')" style="background:var(--danger); color:white; border:none; padding:6px 12px; border-radius:5px; font-weight:bold; font-size:11px; cursor:pointer;">XOÁ</button>
                 </div>
             `;
+        });
+    }
+
+    function updateDeviceRole(key, newRole) {
+        db.ref('devices/' + key).update({ role: newRole }).then(() => {
+            alert("Đã cập nhật quyền thành công!");
         });
     }
 
@@ -304,7 +373,6 @@
         document.getElementById('qrUrlInput').value = qrUrl; 
     });
 
-    // Cập nhật hàm truy cập Admin để ẩn màn hình khóa khi đúng pass
     function accessAdmin() { 
         if(prompt("Nhập mật khẩu quản lý:") === "1905") { 
             isAdmin = true; 
@@ -457,8 +525,16 @@
     function handleConfirm() { if(!curTable) return; db.ref('tables/'+curTable).update({status: 'red'}); showTab('tables'); }
     function setStatus(s) { if(!curTable) return; let items = tablesData[curTable].items || []; items.forEach(it => it.done = true); db.ref('tables/'+curTable).update({items: items, status: s}); showTab('tables'); }
 
+    // BẢO MẬT: Kiểm tra quyền trước khi mở phương thức thanh toán
     function openPayModal() { 
         if(!curTable || !tablesData[curTable]) return; 
+        
+        const role = getUserRole();
+        if (role === 'Phục vụ') {
+            alert("Tài khoản của bạn có quyền phục vụ, không thể thực hiện chức năng thanh toán!");
+            return;
+        }
+
         const total = parseInt(document.getElementById('lblTotal').innerText.replace(/\D/g,'')); 
         document.getElementById('payTotal').innerText = total.toLocaleString() + "đ"; 
         document.getElementById('payModal').style.display = 'flex'; 
@@ -519,6 +595,11 @@
         document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active')); 
         document.getElementById('tab-'+id).classList.add('active'); 
         if(document.getElementById('btn-tab-'+id)) document.getElementById('btn-tab-'+id).classList.add('active'); 
+        
+        // Gọi xử lý hiển thị nếu chuyển sang tab Giao Việc
+        if(id === 'tasks') {
+            initTasksTab();
+        }
     }
 
     function closeModal(id) { document.getElementById(id).style.display='none'; }
@@ -526,6 +607,146 @@
     function calcChange() { let t = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,'')), c = parseInt(document.getElementById('cashIn').value)||0; document.getElementById('cashChange').innerText = (c-t>0?(c-t).toLocaleString():0)+"đ"; }
     function addMenu() { const n = document.getElementById('inName').value, p = parseInt(document.getElementById('inPrice').value); if(n && p) { db.ref('menu').push({name:n, price:p}); document.getElementById('inName').value=''; document.getElementById('inPrice').value=''; } }
     function renderAdminMenu() { const d = document.getElementById('adminMenu'); d.innerHTML = ''; Object.keys(menuData).forEach(k => { d.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${menuData[k].name}</span><button onclick="db.ref('menu/${k}').remove()" style="color:red; border:none; background:none;">Xóa</button></div>`; }); }
+
+    // ---------------- LOGIC HOÀN TOÀN MỚI CHO TAB GIAO VIỆC ----------------
+    let activeTaskListenerRef = null;
+
+    function initTasksTab() {
+        const role = getUserRole();
+        
+        if (role === 'Quản lý') {
+            document.getElementById('managerTaskArea').style.display = 'block';
+            document.getElementById('employeeTaskArea').style.display = 'none';
+            updateTasksViewDropdown();
+            loadTasksForManager();
+        } else {
+            document.getElementById('managerTaskArea').style.display = 'none';
+            document.getElementById('employeeTaskArea').style.display = 'block';
+            loadTasksForEmployee();
+        }
+    }
+
+    function updateTasksViewDropdown() {
+        const select = document.getElementById('taskEmployeeSelect');
+        if (!select) return;
+        const currentSelected = select.value;
+        select.innerHTML = '';
+        
+        Object.keys(allDevicesData).forEach(key => {
+            select.innerHTML += `<option value="${key}">👤 ${allDevicesData[key].name} (${allDevicesData[key].role || 'Phục vụ'})</option>`;
+        });
+        
+        if (currentSelected && allDevicesData[currentSelected]) {
+            select.value = currentSelected;
+        }
+    }
+
+    // Quản lý theo dõi checklist thời gian thực của nhân viên được chọn
+    function loadTasksForManager() {
+        const targetEmployeeKey = document.getElementById('taskEmployeeSelect').value;
+        const container = document.getElementById('managerTaskListContainer');
+        container.innerHTML = '';
+
+        if(activeTaskListenerRef) activeTaskListenerRef.off();
+        if(!targetEmployeeKey) {
+            container.innerHTML = '<p style="color:gray; text-align:center; font-size:13px;">Vui lòng chọn hoặc đăng ký nhân viên trước.</p>';
+            return;
+        }
+
+        activeTaskListenerRef = db.ref('tasks/' + targetEmployeeKey);
+        activeTaskListenerRef.on('value', s => {
+            container.innerHTML = '';
+            const tasks = s.val() || {};
+            if(Object.keys(tasks).length === 0) {
+                container.innerHTML = '<p style="color:gray; text-align:center; font-size:13px;">Nhân viên này chưa có việc nào được giao.</p>';
+                return;
+            }
+            
+            Object.keys(tasks).forEach(taskId => {
+                const task = tasks[taskId];
+                let textClass = 'task-text';
+                if(task.important) textClass += ' task-important';
+                if(task.done) textClass += ' task-done-text';
+
+                container.innerHTML += `
+                    <div class="task-card">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <input type="checkbox" ${task.done ? 'checked' : ''} disabled style="width:18px; height:18px;">
+                            <span class="${textClass}">${task.text}</span>
+                        </div>
+                        <button onclick="deleteTaskByManager('${targetEmployeeKey}', '${taskId}')" style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">XÓA</button>
+                    </div>
+                `;
+            });
+        });
+    }
+
+    function addTaskByManager() {
+        const targetEmployeeKey = document.getElementById('taskEmployeeSelect').value;
+        const content = document.getElementById('taskContentInput').value.trim();
+        const isImportant = document.getElementById('taskImportantInput').checked;
+
+        if(!targetEmployeeKey) return alert("Chưa chọn nhân viên nhận việc!");
+        if(!content) return alert("Vui lòng điền nội dung công việc!");
+
+        db.ref('tasks/' + targetEmployeeKey).push({
+            text: content,
+            important: isImportant,
+            done: false,
+            assignedAt: new Date().toLocaleString('vi-VN')
+        }).then(() => {
+            document.getElementById('taskContentInput').value = '';
+            document.getElementById('taskImportantInput').checked = false;
+        });
+    }
+
+    function deleteTaskByManager(employeeKey, taskId) {
+        if(confirm("Bạn có chắc chắn muốn xóa bỏ công việc này?")) {
+            db.ref(`tasks/${employeeKey}/${taskId}`).remove();
+        }
+    }
+
+    // Nhân viên theo dõi và thực hiện tích hoàn thành việc cá nhân
+    function loadTasksForEmployee() {
+        const myDevId = localStorage.getItem('uc_dev_id');
+        const container = document.getElementById('employeeTaskListContainer');
+        container.innerHTML = '';
+
+        if(activeTaskListenerRef) activeTaskListenerRef.off();
+        if(!myDevId) return;
+
+        activeTaskListenerRef = db.ref('tasks/' + myDevId);
+        activeTaskListenerRef.on('value', s => {
+            container.innerHTML = '';
+            const tasks = s.val() || {};
+            if(Object.keys(tasks).length === 0) {
+                container.innerHTML = '<p style="color:gray; text-align:center; font-size:13px; padding:20px 0;">🎉 Tuyệt vời! Bạn không có việc nào cần xử lý.</p>';
+                return;
+            }
+
+            Object.keys(tasks).forEach(taskId => {
+                const task = tasks[taskId];
+                let textClass = 'task-text';
+                if(task.important) textClass += ' task-important';
+                if(task.done) textClass += ' task-done-text';
+
+                container.innerHTML += `
+                    <div class="task-card" style="justify-content: flex-start; gap:12px; padding:15px;">
+                        <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTaskStatus('${taskId}', this.checked)" style="width:22px; height:22px; cursor:pointer;">
+                        <span class="${textClass}">${task.text}</span>
+                    </div>
+                `;
+            });
+        });
+    }
+
+    function toggleTaskStatus(taskId, isChecked) {
+        const myDevId = localStorage.getItem('uc_dev_id');
+        if(!myDevId) return;
+        db.ref(`tasks/${myDevId}/${taskId}`).update({
+            done: isChecked
+        });
+    }
 
 </script>
 </body>
