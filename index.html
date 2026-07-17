@@ -221,6 +221,18 @@
 <div id="qtyModal" class="modal-overlay"><div class="modal"><h3>Sửa món</h3><p id="qtyName"></p><div style="display:flex; justify-content:center; align-items:center; gap:20px; margin:25px 0;"><button class="opt-btn" style="width:50px" onclick="changeQty(-1)">-</button><b id="qtyVal" style="font-size:28px;">1</b><button class="opt-btn" style="width:50px" onclick="changeQty(1)">+</button></div><button onclick="toggleItemDone()" style="width:100%; background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; margin-bottom:10px;">XONG</button><button onclick="deleteCurrentItem()" style="width:100%; background:var(--danger); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold;">XÓA MÓN</button><p onclick="closeModal('qtyModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer;">Đóng</p></div></div>
 <div id="moveTableModal" class="modal-overlay"><div class="modal"><h3>Chuyển bàn</h3><p>Từ bàn <b id="moveFrom">?</b> sang:</p><select id="selectToTable" style="width:100%; padding:15px; margin-bottom:20px; border-radius:10px; border:2px solid var(--primary);"></select><button onclick="handleMoveTable()" style="width:100%; background:var(--primary); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold;">XÁC NHẬN</button><p onclick="closeModal('moveTableModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer;">Hủy</p></div></div>
 
+<!-- TÍNH NĂNG MỚI: Modal Ra Món -->
+<div id="serveModal" class="modal-overlay">
+    <div class="modal" style="text-align:center;">
+        <h3>Báo Bưng Nước Bàn <span id="serveTableId"></span></h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
+            <button onclick="setServeStatus(true)" style="background:var(--danger); color:white; padding:15px; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">RA MÓN</button>
+            <button onclick="setServeStatus(false)" style="background:#f0f0f0; color:black; border:1px solid #ddd; padding:15px; border-radius:8px; font-weight:bold; cursor:pointer;">TRỐNG</button>
+        </div>
+        <p onclick="closeModal('serveModal')" style="margin-top:15px; color:gray; cursor:pointer;">Hủy</p>
+    </div>
+</div>
+
 <div class="mobile-bottom-nav">
     <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
     <div class="m-btn" id="btn-tab-pos" onclick="showTab('pos')">☕ POS</div>
@@ -496,7 +508,9 @@
         const container = document.getElementById('list-tables'); container.innerHTML = '';
         for(let i=1; i<=40; i++) {
             let t = tablesData[i] || { status: 'white' };
-            container.innerHTML += `<div class="table-card status-${t.status} ${curTable==i?'selected':''}" onclick="selectTable(${i})">BÀN ${i}${t.startTime?`<div class="table-timer">🕒 ${Math.floor((new Date()-new Date(t.startTime))/60000)}p</div>`:''}</div>`;
+            // TÍNH NĂNG MỚI: Thêm ô bưng nước trực tiếp lên thẻ bàn (không làm ảnh hưởng logic render cũ)
+            let serveBoxHtml = `<div onclick="event.stopPropagation(); openServeModal(${i})" style="width: 90%; margin: 2px auto 4px auto; padding: 4px; font-size: 9px; text-align: center; border-radius: 4px; cursor: pointer; ${t.needsServing ? 'background: var(--danger); color: white; font-weight: bold; border: 1px solid var(--danger);' : 'background: white; color: #999; border: 1px dashed #ccc;'}">${t.needsServing ? 'CẦN BƯNG NƯỚC' : 'TRỐNG'}</div>`;
+            container.innerHTML += `<div class="table-card status-${t.status} ${curTable==i?'selected':''}" onclick="selectTable(${i})">${serveBoxHtml}BÀN ${i}${t.startTime?`<div class="table-timer">🕒 ${Math.floor((new Date()-new Date(t.startTime))/60000)}p</div>`:''}</div>`;
         }
     }
 
@@ -813,6 +827,24 @@
 
         db.ref(`tasks/${myDevId}/${taskId}`).update(updates);
     }
+
+    // ---------------- TÍNH NĂNG MỚI: QUẢN LÝ BƯNG NƯỚC BẮT ĐẦU ----------------
+    let targetServeTable = null;
+    
+    function openServeModal(tableId) {
+        targetServeTable = tableId;
+        document.getElementById('serveTableId').innerText = tableId;
+        document.getElementById('serveModal').style.display = 'flex';
+    }
+    
+    function setServeStatus(needsServing) {
+        if(!targetServeTable) return;
+        // Chỉ update thuộc tính needsServing để không vô tình xoá data hay phá vỡ logic cũ
+        db.ref('tables/' + targetServeTable).update({ needsServing: needsServing }).then(() => {
+            closeModal('serveModal');
+        });
+    }
+    // ---------------- TÍNH NĂNG MỚI KẾT THÚC ----------------
 
 </script>
 </body>
