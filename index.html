@@ -9,28 +9,26 @@
     <style>
         :root { 
             --primary: #5d3fd3; 
-            --primary-gradient: #5d3fd3; /* Đã gỡ linear-gradient để giảm lag */
+            --primary-gradient: #5d3fd3; 
             --success: #28a745; 
             --success-gradient: #28a745;
             --danger: #dc3545; 
             --danger-gradient: #dc3545;
             --dark: #2c3e50; 
-            --bg: #f8f9fa; /* Màu nền trắng sáng */
-            --warning: #cca352; /* Màu vàng gold giống ảnh */
-            --glass-bg: #ffffff; /* Gỡ nền mờ */
+            --bg: #f8f9fa; 
+            --warning: #cca352; 
+            --glass-bg: #ffffff; 
             --glass-border: #e0e0e0;
-            --shadow-soft: none; /* Gỡ shadow gây lag */
+            --shadow-soft: none; 
         }
         * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* Nền trơn sáng, xóa ảnh nền và blur gây lag POS */
         body { 
             margin: 0; 
             background: var(--bg);
             height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; 
         }
         
-        /* Thanh điều hướng */
         .navbar { 
             position: relative; z-index: 1000000; 
             background: #ffffff; 
@@ -46,7 +44,6 @@
         
         .tables-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; padding: 15px; overflow-y: auto; align-content: start; }
         
-        /* Giao diện POS */
         .order-container { display: flex; width: 100%; height: 100%; background: #ffffff; overflow: hidden; }
         .menu-part { width: 55%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; overflow-y: auto; background: #f4f6f8; align-content: start; }
         .bill-part { width: 45%; display: flex; flex-direction: column; border-left: 1px solid #ddd; height: 100%; background: #ffffff; }
@@ -54,7 +51,6 @@
         
         .pos-controls { padding: 12px; background: #f9f9f9; border-top: 1px solid #ddd; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex-shrink: 0; }
         
-        /* Giao diện Thẻ Bàn Mới (Theo ảnh tham khảo) */
         .table-card { 
             background: #ffffff; height: 105px; 
             border: 1px solid var(--dark); border-radius: 8px; 
@@ -66,7 +62,6 @@
         .table-card.status-red { border: 1px solid rgba(220, 53, 69, 0.5); background: #fff5f5; order: 1; }
         .table-card.status-green { border: 1px solid rgba(40, 167, 69, 0.5); background: #f0fdf4; order: 1; }
         
-        /* Bàn đang chọn - Màu Vàng Gold */
         .table-card.selected { 
             background: var(--warning); 
             border: 1px solid var(--warning); 
@@ -83,23 +78,19 @@
         .bill-row { padding: 12px; border-bottom: 1px dashed rgba(0,0,0,0.1); display: flex; flex-direction: column; font-size: 13px; background: white; margin-bottom: 5px; border-radius: 8px; }
         .item-not-done { color: var(--danger); font-weight: bold; }
         
-        /* Modal - Chuyển sang dạng trơn không mờ */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100000; align-items: center; justify-content: center; padding: 20px; }
         .modal { background: #ffffff; width: 100%; max-width: 350px; border-radius: 12px; padding: 25px; max-height: 85vh; overflow-y: auto; border: 1px solid #ddd; }
         
-        /* Chức năng Quản lý */
         .admin-section { background: #ffffff; padding: 18px; border-radius: 12px; margin-bottom: 18px; border: 1px solid #ddd; }
         .bill-history-card { background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 5px solid var(--primary); margin-bottom: 12px; font-size: 13px; border-right: 1px solid #ddd; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
         .shift-log-card { background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 5px solid var(--dark); margin-bottom: 12px; font-size: 13px; border-right: 1px solid #ddd; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
         
-        /* Nút tùy chọn */
         .opt-btn { background: #fff; border: 1px solid #ddd; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; }
         .opt-btn.active { background: var(--primary); color: white; border: none; }
         
         .qr-image-display { width: 100%; max-width: 200px; margin: 15px auto; display: none; border-radius: 10px; }
         .detail-item { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-top: 4px; border-bottom: 1px dotted #ddd; padding-bottom: 4px; }
         
-        /* Xác thực */
         #authOverlay { background: #f4f7f6; display: flex; flex-direction: column; z-index: 999999; }
         .auth-container { background: #ffffff; padding: 40px 25px; border-radius: 16px; width: 100%; max-width: 340px; text-align: center; border: 1px solid #ddd; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .auth-input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; outline: none; background: #f9f9f9; }
@@ -111,7 +102,6 @@
         .task-important { color: var(--danger) !important; font-weight: bold; }
         .task-done-text { text-decoration: line-through; color: #aaa !important; font-weight: normal !important; }
         
-        /* Điều hướng mobile */
         .mobile-bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: #ffffff; border-top: 1px solid #ddd; z-index: 9999; padding-bottom: env(safe-area-inset-bottom); }
         .m-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: #888; font-weight: bold; cursor: pointer; position: relative; }
         .m-btn.active { color: var(--primary); background: #f4f6f8; }
@@ -164,7 +154,6 @@
 
 <div id="tab-tasks" class="tab-content">
     <div style="padding:15px; width:100%; overflow-y:auto; padding-bottom:100px;">
-        
         <div id="managerTaskArea" style="display: none;">
             <h2 style="color: var(--dark);">📋 Quản Lý Giao Việc</h2>
             <div class="admin-section">
@@ -201,7 +190,6 @@
             <p style="font-size:13px; color:gray; margin-top:0; margin-bottom:20px;">Tích chọn vào ô vuông bên cạnh khi bạn đã hoàn thành công việc.</p>
             <div id="employeeTaskListContainer"></div>
         </div>
-
     </div>
 </div>
 
@@ -257,12 +245,17 @@
             <input type="text" id="qrUrlInput" placeholder="Link ảnh QR..." style="width:100%;padding:14px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
             <button onclick="saveQR()" style="width:100%;padding:14px;background:var(--dark);color:white;border:none;border-radius:10px; font-weight: bold;">LƯU QR</button>
         </div>
+        
         <div class="admin-section">
-            <h3 style="margin-top:0;">📝 Menu</h3>
-            <input id="inName" placeholder="Tên món" style="width:100%;padding:14px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
-            <input id="inPrice" type="number" placeholder="Giá" style="width:100%;padding:14px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            <h3 style="margin-top:0;">📝 Menu & Nhóm Món</h3>
+            <input id="inName" placeholder="Tên món (vd: Cafe Đen)" style="width:100%;padding:14px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            <input id="inPrice" type="number" placeholder="Giá (vd: 15000)" style="width:100%;padding:14px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+                <input id="inGroup" placeholder="Nhóm (vd: Cà phê)" style="width:100%;padding:14px;border:1px solid #ddd; border-radius: 10px; background: white;">
+                <input id="inOrder" type="number" placeholder="Vị trí (vd: 1)" style="width:100%;padding:14px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            </div>
             <button onclick="addMenu()" style="width:100%;padding:14px;background:var(--primary-gradient);color:white;border:none;border-radius:10px; font-weight: bold;">THÊM MÓN</button>
-            <div id="adminMenu" style="margin-top:15px; max-height:200px; overflow-y:auto;"></div>
+            <div id="adminMenu" style="margin-top:20px; max-height:400px; overflow-y:auto;"></div>
         </div>
     </div>
 </div>
@@ -309,7 +302,6 @@
 </div>
 
 <script>
-    // TOÀN BỘ LOGIC CŨ ĐƯỢC GIỮ NGUYÊN 100%
     const firebaseConfig = {
         apiKey: "AIzaSyCY23UN98357R178ZCxY9BhoTiX3LTzaQ8",
         authDomain: "uyencoffeepos.firebaseapp.com",
@@ -412,11 +404,7 @@
         });
     }
 
-    function updateDeviceRole(key, newRole) {
-        db.ref('devices/' + key).update({ role: newRole }).then(() => {
-            alert("Đã cập nhật quyền thành công!");
-        });
-    }
+    function updateDeviceRole(key, newRole) { db.ref('devices/' + key).update({ role: newRole }).then(() => { alert("Đã cập nhật quyền thành công!"); }); }
 
     function deleteDevice(key) {
         if (confirm("Xoá tài khoản này? Thiết bị của nhân viên này sẽ lập tức bị văng ra trang đăng nhập.")) {
@@ -435,9 +423,7 @@
         if(currentRegCode === "Chưa có") return alert("Hãy tạo mã mới trước!");
         navigator.clipboard.writeText(currentRegCode).then(() => {
             alert("Đã sao chép mã: " + currentRegCode);
-        }).catch(err => {
-            alert("Lỗi sao chép, bạn có thể tự bôi đen và copy.");
-        });
+        }).catch(err => { alert("Lỗi sao chép, bạn có thể tự bôi đen và copy."); });
     }
 
     db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
@@ -537,10 +523,7 @@
 
         db.ref('shift_logs').once('value').then(snapshot => {
             const logs = snapshot.val();
-            if (!logs) {
-                alert("Chưa có dữ liệu lịch sử ca nào để tải!");
-                return;
-            }
+            if (!logs) { alert("Chưa có dữ liệu lịch sử ca nào để tải!"); return; }
 
             let csvContent = "\uFEFF"; 
             csvContent += "Ngày,Giờ Mở Ca,Giờ Chốt Ca,Tiền Mặt,Chuyển Khoản,Tổng Doanh Thu\n";
@@ -565,9 +548,7 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        }).catch(error => {
-            alert("Lỗi khi lấy dữ liệu: " + error);
-        });
+        }).catch(error => { alert("Lỗi khi lấy dữ liệu: " + error); });
     }
 
     function renderActiveBills() {
@@ -619,26 +600,17 @@
         });
     }
 
-    // UPDATE RENDER TABLE - THAY ĐỔI GIAO DIỆN HIỂN THỊ
     function renderTables() {
         const container = document.getElementById('list-tables'); container.innerHTML = '';
         for(let i=1; i<=40; i++) {
             let t = tablesData[i] || { status: 'white' };
-            
-            // LOGIC BÁO BƯNG NƯỚC GIỮ NGUYÊN (CODE CŨ)
             let serveBoxHtml = `<div onclick="event.stopPropagation(); openServeModal(${i})" style="width: 85%; margin: 2px auto 6px auto; padding: 5px 2px; font-size: 9px; text-align: center; border-radius: 6px; cursor: pointer; transition: 0.2s; ${t.needsServing ? 'background: var(--danger-gradient); color: white; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(220,53,69,0.3);' : 'background: rgba(255,255,255,0.6); color: #888; border: 1px dashed rgba(0,0,0,0.1);'}">${t.needsServing ? 'CẦN BƯNG NƯỚC' : 'TRỐNG'}</div>`;
-            
-            // TÍNH TOÁN TỔNG TIỀN VÀ THỜI GIAN
             let tableTotal = 0;
-            if(t.items) {
-                t.items.forEach(item => { tableTotal += item.price * item.qty; });
-            }
+            if(t.items) { t.items.forEach(item => { tableTotal += item.price * item.qty; }); }
             let priceHtml = tableTotal > 0 ? `<div class="price-display" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:2px;">${tableTotal.toLocaleString()}đ</div>` : '';
-            
             let timeText = t.startTime ? `${Math.floor((new Date()-new Date(t.startTime))/60000)}p` : '';
             let statusDisplay = (tableTotal > 0 ? '' : 'Trống') + (timeText ? ` - ${timeText}` : '');
 
-            // RENDER HTML CHUẨN GIAO DIỆN MỚI
             container.innerHTML += `<div class="table-card status-${t.status} ${curTable==i?'selected':''}" onclick="selectTable(${i})">
                 <div style="font-size:16px; margin-bottom:4px;">🖨️</div>
                 <span style="font-size:14px; font-weight:bold;">Bàn ${i}</span>
@@ -650,14 +622,78 @@
     }
 
     function selectTable(i) { curTable = i; document.getElementById('lblTable').innerText = "BÀN " + i; showTab('pos'); renderBill(); }
-    function renderMenu() { const m = document.getElementById('list-menu'); m.innerHTML = ''; Object.values(menuData).forEach(it => { m.innerHTML += `<div class="menu-item" onclick="openOpt('${it.name}', ${it.price})">${it.name}<br><span style="color:var(--primary); font-size: 14px; margin-top:4px; display:inline-block;">${it.price/1000}k</span></div>`; }); }
+    
+    // UPDATE LOGIC MENU (GOM NHÓM & VỊ TRÍ)
+    function addMenu() { 
+        const n = document.getElementById('inName').value.trim();
+        const p = parseInt(document.getElementById('inPrice').value);
+        const g = document.getElementById('inGroup').value.trim() || "Khác";
+        const o = parseInt(document.getElementById('inOrder').value) || 99;
+        
+        if(n && p) { 
+            db.ref('menu').push({ name: n, price: p, group: g, order: o }); 
+            document.getElementById('inName').value = ''; 
+            document.getElementById('inPrice').value = ''; 
+            document.getElementById('inGroup').value = ''; 
+            document.getElementById('inOrder').value = ''; 
+        } 
+    }
+
+    function renderMenu() { 
+        const m = document.getElementById('list-menu'); 
+        m.innerHTML = ''; 
+        
+        let itemsArr = [];
+        Object.keys(menuData).forEach(k => { itemsArr.push({ key: k, ...menuData[k] }); });
+        itemsArr.sort((a, b) => (a.order || 99) - (b.order || 99));
+
+        let groups = {};
+        itemsArr.forEach(it => {
+            let g = it.group || "Khác";
+            if(!groups[g]) groups[g] = [];
+            groups[g].push(it);
+        });
+
+        Object.keys(groups).forEach(g => {
+            m.innerHTML += `<div style="grid-column: 1 / -1; font-weight: 800; color: var(--primary); font-size: 14px; margin-top: 5px; padding-bottom: 3px; border-bottom: 2px solid #ddd;">${g}</div>`;
+            groups[g].forEach(it => {
+                m.innerHTML += `<div class="menu-item" onclick="openOpt('${it.name}', ${it.price})">${it.name}<br><span style="color:var(--danger); font-size: 14px; margin-top:4px; display:inline-block;">${it.price/1000}k</span></div>`;
+            });
+        });
+    }
+
+    function renderAdminMenu() { 
+        const d = document.getElementById('adminMenu'); 
+        d.innerHTML = ''; 
+        
+        let itemsArr = [];
+        Object.keys(menuData).forEach(k => { itemsArr.push({ key: k, ...menuData[k] }); });
+        itemsArr.sort((a, b) => (a.order || 99) - (b.order || 99));
+        
+        let groups = {};
+        itemsArr.forEach(it => {
+            let g = it.group || "Khác";
+            if(!groups[g]) groups[g] = [];
+            groups[g].push(it);
+        });
+
+        Object.keys(groups).forEach(g => {
+            d.innerHTML += `<div style="font-weight:900; margin:10px 0 5px 0; color:var(--dark); font-size:15px; border-bottom:1px dashed #ccc;">📌 ${g}</div>`;
+            groups[g].forEach(it => {
+                d.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid #eee; background: #f9f9f9; margin-bottom: 6px; border-radius: 8px;">
+                    <div><b style="color:var(--primary); font-size:14px;">${it.name}</b> - ${it.price.toLocaleString()}đ<br><small style="color:gray;">Vị trí hiển thị: ${it.order || 99}</small></div>
+                    <button onclick="if(confirm('Xóa món này?')) db.ref('menu/${it.key}').remove()" style="color:white; background:var(--danger); border:none; border-radius:6px; padding:6px 12px; font-weight:bold; cursor:pointer;">Xóa</button>
+                </div>`;
+            });
+        });
+    }
+    
     function openOpt(name, price) { if(!curTable) return alert("Chọn bàn!"); tempItem = {name, price}; document.getElementById('optTitle').innerText = name; document.getElementById('optModal').style.display = 'flex'; updateOptUI(); }
     
     function confirmAdd() { 
         let items = tablesData[curTable]?.items || []; 
         items.unshift({fName: `${tempItem.name} (${curType})${document.getElementById('optNote').value?': '+document.getElementById('optNote').value:''}`, price: tempItem.price, qty: 1, done: false}); 
         db.ref('tables/'+curTable).update({ items: items, startTime: new Date().toISOString(), status: 'white' }); 
-        
         document.getElementById('optNote').value = '';
         closeModal('optModal'); 
     }
@@ -744,16 +780,12 @@
         document.getElementById('tab-'+id).classList.add('active'); 
         if(document.getElementById('btn-tab-'+id)) document.getElementById('btn-tab-'+id).classList.add('active'); 
         
-        if(id === 'tasks') {
-            initTasksTab();
-        }
+        if(id === 'tasks') { initTasksTab(); }
     }
 
     function closeModal(id) { document.getElementById(id).style.display='none'; }
     function updateOptUI() { document.getElementById('optNong').className = curType==='Nóng'?'opt-btn active':'opt-btn'; document.getElementById('optDa').className = curType==='Đá'?'opt-btn active':'opt-btn'; }
     function calcChange() { let t = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,'')), c = parseInt(document.getElementById('cashIn').value)||0; document.getElementById('cashChange').innerText = (c-t>0?(c-t).toLocaleString():0)+"đ"; }
-    function addMenu() { const n = document.getElementById('inName').value, p = parseInt(document.getElementById('inPrice').value); if(n && p) { db.ref('menu').push({name:n, price:p}); document.getElementById('inName').value=''; document.getElementById('inPrice').value=''; } }
-    function renderAdminMenu() { const d = document.getElementById('adminMenu'); d.innerHTML = ''; Object.keys(menuData).forEach(k => { d.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; background: white; margin-bottom: 5px; border-radius: 8px;"><span>${menuData[k].name}</span><button onclick="db.ref('menu/${k}').remove()" style="color:white; background:var(--danger); border:none; border-radius:6px; padding:4px 10px; font-weight:bold;">Xóa</button></div>`; }); }
 
     let activeTaskListenerRef = null;
 
@@ -782,9 +814,7 @@
             select.innerHTML += `<option value="${key}">👤 ${allDevicesData[key].name} (${allDevicesData[key].role || 'Phục vụ'})</option>`;
         });
         
-        if (currentSelected && allDevicesData[currentSelected]) {
-            select.value = currentSelected;
-        }
+        if (currentSelected && allDevicesData[currentSelected]) { select.value = currentSelected; }
     }
 
     function loadTasksForManager() {
@@ -793,17 +823,13 @@
         container.innerHTML = '';
 
         if(activeTaskListenerRef) activeTaskListenerRef.off();
-        if(!targetEmployeeKey) {
-            container.innerHTML = '<p style="color:gray; text-align:center; font-size:13px;">Vui lòng chọn hoặc đăng ký nhân viên trước.</p>';
-            return;
-        }
+        if(!targetEmployeeKey) { container.innerHTML = '<p style="color:gray; text-align:center; font-size:13px;">Vui lòng chọn hoặc đăng ký nhân viên trước.</p>'; return; }
 
         activeTaskListenerRef = db.ref('tasks/' + targetEmployeeKey);
         activeTaskListenerRef.on('value', s => {
             const tasks = s.val() || {};
             
-            let hasUpdates = false;
-            let updates = {};
+            let hasUpdates = false, updates = {};
             Object.keys(tasks).forEach(taskId => {
                 let t = tasks[taskId];
                 if (t.frequency > 0 && t.done && t.dueDate && Date.now() > t.dueDate) {
@@ -815,16 +841,10 @@
                 }
             });
 
-            if (hasUpdates) {
-                db.ref('tasks/' + targetEmployeeKey).update(updates);
-                return;
-            }
+            if (hasUpdates) { db.ref('tasks/' + targetEmployeeKey).update(updates); return; }
 
             container.innerHTML = '';
-            if(Object.keys(tasks).length === 0) {
-                container.innerHTML = '<p style="color:gray; text-align:center; font-size:13px;">Nhân viên này chưa có việc nào được giao.</p>';
-                return;
-            }
+            if(Object.keys(tasks).length === 0) { container.innerHTML = '<p style="color:gray; text-align:center; font-size:13px;">Nhân viên này chưa có việc nào được giao.</p>'; return; }
             
             Object.keys(tasks).forEach(taskId => {
                 const task = tasks[taskId];
@@ -866,12 +886,8 @@
         }
 
         db.ref('tasks/' + targetEmployeeKey).push({
-            text: content,
-            important: isImportant,
-            frequency: freq,
-            dueDate: dueDate,
-            done: false,
-            assignedAt: new Date().toLocaleString('vi-VN')
+            text: content, important: isImportant, frequency: freq, dueDate: dueDate,
+            done: false, assignedAt: new Date().toLocaleString('vi-VN')
         }).then(() => {
             document.getElementById('taskContentInput').value = '';
             document.getElementById('taskImportantInput').checked = false;
@@ -879,11 +895,7 @@
         });
     }
 
-    function deleteTaskByManager(employeeKey, taskId) {
-        if(confirm("Bạn có chắc chắn muốn xóa bỏ công việc này?")) {
-            db.ref(`tasks/${employeeKey}/${taskId}`).remove();
-        }
-    }
+    function deleteTaskByManager(employeeKey, taskId) { if(confirm("Bạn có chắc chắn muốn xóa bỏ công việc này?")) { db.ref(`tasks/${employeeKey}/${taskId}`).remove(); } }
 
     function loadTasksForEmployee() {
         const myDevId = localStorage.getItem('uc_dev_id');
@@ -897,8 +909,7 @@
         activeTaskListenerRef.on('value', s => {
             const tasks = s.val() || {};
 
-            let hasUpdates = false;
-            let updates = {};
+            let hasUpdates = false, updates = {};
             Object.keys(tasks).forEach(taskId => {
                 let t = tasks[taskId];
                 if (t.frequency > 0 && t.done && t.dueDate && Date.now() > t.dueDate) {
@@ -910,10 +921,7 @@
                 }
             });
 
-            if (hasUpdates) {
-                db.ref('tasks/' + myDevId).update(updates);
-                return;
-            }
+            if (hasUpdates) { db.ref('tasks/' + myDevId).update(updates); return; }
 
             container.innerHTML = '';
             if(Object.keys(tasks).length === 0) {
@@ -948,11 +956,8 @@
         let updates = { done: isChecked };
 
         if (isChecked && freq > 0 && currentDueDate > 0 && Date.now() > currentDueDate) {
-            let d = new Date();
-            d.setHours(23, 59, 59, 999);
-            updates.dueDate = d.getTime();
+            let d = new Date(); d.setHours(23, 59, 59, 999); updates.dueDate = d.getTime();
         }
-
         db.ref(`tasks/${myDevId}/${taskId}`).update(updates);
     }
 
@@ -966,18 +971,14 @@
     
     function setServeStatus(needsServing) {
         if(!targetServeTable) return;
-        db.ref('tables/' + targetServeTable).update({ needsServing: needsServing }).then(() => {
-            closeModal('serveModal');
-        });
+        db.ref('tables/' + targetServeTable).update({ needsServing: needsServing }).then(() => { closeModal('serveModal'); });
     }
 
     document.addEventListener("visibilitychange", function() {
         if (document.visibilityState === 'hidden') {
             firebase.database().goOffline();
-            console.log("Tab ẩn -> Đã ngắt kết nối Firebase để tối ưu.");
         } else {
             firebase.database().goOnline();
-            console.log("Tab hiện -> Đã kết nối lại Firebase.");
         }
     });
 
