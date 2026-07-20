@@ -119,20 +119,25 @@
 
         /* ====== BẢN VÁ CHO ĐIỆN THOẠI (GIAO DIỆN DỌC CÂN ĐỐI) ====== */
         @media (max-width: 768px) {
+            /* Tăng menu, giảm bill theo yêu cầu */
             .menu-container-flex { width: 60%; }
             .bill-part { width: 40%; }
             
+            /* Thu gọn sidebar menu để không lấn chỗ */
             .category-sidebar { width: 60px; }
             .cat-btn { padding: 12px 2px; font-size: 10px; word-break: break-word; }
             
+            /* Đưa danh sách món về 1 cột để hiển thị to rõ, không bị đè chữ */
             .menu-part-items { grid-template-columns: 1fr; gap: 8px; padding: 8px; }
             .menu-item { padding: 12px 5px; font-size: 12px; }
             .cat-header { font-size: 13px; margin: 5px 0; }
             
+            /* Cân đối lại text bên phần Bill */
             #lblTable { font-size: 12px !important; }
             #lblTotal { font-size: 15px !important; }
             .bill-row { font-size: 11px; padding: 8px 5px; }
             
+            /* Xếp các nút điều khiển POS thành cột dọc để vừa với không gian hẹp */
             .pos-controls { display: flex; flex-direction: column; padding: 8px; gap: 6px; }
             .pos-controls button { width: 100%; padding: 12px; font-size: 11px !important; margin: 0; }
         }
@@ -162,6 +167,7 @@
 
 <div id="tab-pos" class="tab-content">
     <div class="order-container">
+        <!-- Khu vực MENU MỚI CÓ SIDEBAR -->
         <div class="menu-container-flex">
             <div id="category-sidebar" class="category-sidebar"></div>
             <div id="list-menu" class="menu-part-items"></div>
@@ -287,6 +293,7 @@
     </div>
 </div>
 
+<!-- MODAL SỬA MÓN MỚI -->
 <div id="editMenuModal" class="modal-overlay">
     <div class="modal">
         <h3 style="margin-top:0; color: var(--dark);">Sửa thông tin món</h3>
@@ -314,13 +321,7 @@
         <div id="transferSection" style="display:none; text-align:center;">
             <img id="qrDisplay" class="qr-image-display" src="">
         </div>
-        
-        <!-- THAY ĐỔI TẠI ĐÂY: Tạo grid 2 nút lựa chọn in bill hoặc không -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
-            <button onclick="handlePay(true)" style="background:var(--success-gradient); color:white; padding:16px; border:none; border-radius:12px; font-weight:bold; font-size: 13px;">HOÀN TẤT & IN BILL</button>
-            <button onclick="handlePay(false)" style="background:var(--dark); color:white; padding:16px; border:none; border-radius:12px; font-weight:bold; font-size: 13px;">HOÀN TẤT (KHÔNG IN)</button>
-        </div>
-        
+        <button onclick="handlePay()" style="width:100%; background:var(--dark); color:white; padding:16px; border:none; border-radius:12px; font-weight:bold; font-size: 15px;">HOÀN TẤT</button>
         <p onclick="closeModal('payModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer; font-weight: bold;">Hủy</p>
     </div>
 </div>
@@ -358,27 +359,6 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    // HÀM XỬ LÝ LỆNH IN RA MÁY IN (Sử dụng iframe ẩn)
-    function printHtml(html) {
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
-        const doc = iframe.contentWindow.document;
-        doc.open();
-        doc.write(html);
-        doc.close();
-        iframe.contentWindow.focus();
-        setTimeout(() => {
-            iframe.contentWindow.print();
-            setTimeout(() => { document.body.removeChild(iframe); }, 1000);
-        }, 500);
-    }
 
     let currentTab = 'tables';
     let curTable = null, menuData = {}, tablesData = {}, currentShift = null, curType = 'Đá', tempItem = null, editIdx = null, payMethod = 'cash', qrUrl = "";
@@ -705,11 +685,13 @@
 
     function selectTable(i) { curTable = i; document.getElementById('lblTable').innerText = "BÀN " + i; showTab('pos'); renderBill(); }
     
+    // CẬP NHẬT RENDER MENU HỖ TRỢ NHÓM MÓN
     function renderMenu() { 
         const m = document.getElementById('list-menu'); 
         const sb = document.getElementById('category-sidebar');
         m.innerHTML = ''; sb.innerHTML = ''; 
 
+        // Nhóm các món lại theo category
         let grouped = {};
         Object.values(menuData).forEach(it => {
             let cat = it.category || 'Khác';
@@ -721,17 +703,21 @@
         for (let cat in grouped) {
             let catId = "cat-" + cat.replace(/\s+/g, '-').toLowerCase();
             
+            // Render nút bên Sidebar
             sb.innerHTML += `<div class="cat-btn ${isFirst ? 'active' : ''}" onclick="scrollToCat('${catId}', this)">${cat}</div>`;
             isFirst = false;
 
+            // Render Header nhóm bên list
             m.innerHTML += `<div id="${catId}" class="cat-header">${cat}</div>`;
             
+            // Render các món trong nhóm
             grouped[cat].forEach(it => {
                 m.innerHTML += `<div class="menu-item" onclick="openOpt('${it.name}', ${it.price})">${it.name}<br><span style="color:var(--primary); font-size: 14px; margin-top:4px; display:inline-block;">${it.price/1000}k</span></div>`;
             });
         }
     }
 
+    // HÀM CUỘN TỚI NHÓM MÓN
     function scrollToCat(catId, btn) {
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -761,39 +747,7 @@
         document.getElementById('lblTotal').innerText = total.toLocaleString() + "đ"; 
     }
 
-    // THAY ĐỔI TẠI ĐÂY: Xử lý in món mới chưa làm (màu đỏ) khi bấm Xác nhận
-    function handleConfirm() { 
-        if(!curTable) return; 
-        
-        let items = tablesData[curTable]?.items || [];
-        // Lọc ra danh sách món mới (chưa done - màu đỏ)
-        let newItems = items.filter(it => !it.done);
-        
-        if (newItems.length > 0) {
-            let printHtmlContent = `
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        @page { size: 80mm 80mm; margin: 0; }
-                        body { width: 80mm; max-height: 80mm; margin: 0; padding: 4mm; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; box-sizing: border-box; }
-                        .title { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 8px; border-bottom: 2px dashed #000; padding-bottom: 4px; }
-                        .item { margin-bottom: 6px; font-size: 15px; font-weight: bold; line-height: 1.4; }
-                    </style>
-                </head>
-                <body>
-                    <div class="title">PHẦN NƯỚC - BÀN: ${curTable}</div>
-                    ${newItems.map(it => `<div class="item">${it.qty}x ${it.fName}</div>`).join('')}
-                </body>
-                </html>
-            `;
-            printHtml(printHtmlContent);
-        }
-        
-        db.ref('tables/'+curTable).update({status: 'red'}); 
-        showTab('tables'); 
-    }
-    
+    function handleConfirm() { if(!curTable) return; db.ref('tables/'+curTable).update({status: 'red'}); showTab('tables'); }
     function setStatus(s) { if(!curTable) return; let items = tablesData[curTable].items || []; items.forEach(it => it.done = true); db.ref('tables/'+curTable).update({items: items, status: s}); showTab('tables'); }
 
     function openPayModal() { 
@@ -811,62 +765,8 @@
         setPayMethod('cash'); 
     }
 
-    // THAY ĐỔI TẠI ĐÂY: Hàm xử lý thanh toán nhận thêm biến shouldPrint (True/False)
-    function handlePay(shouldPrint) {
+    function handlePay() {
         const total = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,''));
-        
-        // Nếu chọn "Hoàn tất & In Bill"
-        if (shouldPrint && tablesData[curTable]) {
-            let items = tablesData[curTable].items || [];
-            let printHtmlContent = `
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        @page { size: 80mm auto; margin: 0; }
-                        body { width: 80mm; margin: 0; padding: 5mm; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; box-sizing: border-box; }
-                        .header { text-align: center; margin-bottom: 15px; }
-                        .brand { font-size: 18px; font-weight: bold; letter-spacing: 1px; }
-                        .info { font-size: 12px; margin-top: 4px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                        th { border-bottom: 1px solid #000; text-align: left; padding: 5px 0; font-size: 12px; }
-                        td { padding: 6px 0; vertical-align: top; font-size: 12px; border-bottom: 1px dotted #eee; }
-                        .total { text-align: right; font-size: 16px; font-weight: bold; margin-top: 15px; border-top: 1px dashed #000; padding-top: 8px; }
-                        .footer { text-align: center; margin-top: 20px; font-size: 11px; font-style: italic; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <div class="brand">UYÊN COFFEE</div>
-                        <div class="info" style="font-weight: bold; text-transform: uppercase;">Hóa Đơn Thanh Toán</div>
-                        <div class="info">Bàn: ${curTable} | Giờ: ${new Date().toLocaleTimeString('vi-VN')}</div>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Món</th>
-                                <th style="text-align: center; width: 30px;">SL</th>
-                                <th style="text-align: right; width: 70px;">T.Tiền</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${items.map(it => `
-                                <tr>
-                                    <td>${it.fName}</td>
-                                    <td style="text-align: center;">${it.qty}</td>
-                                    <td style="text-align: right;">${(it.price * it.qty).toLocaleString()}đ</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                    <div class="total">TỔNG CỘNG: ${total.toLocaleString()}đ</div>
-                    <div class="footer">Cảm ơn Quý khách - Hẹn gặp lại!</div>
-                </body>
-                </html>
-            `;
-            printHtml(printHtmlContent);
-        }
-
         const billData = { time: new Date().toLocaleTimeString('vi-VN'), table: curTable, total: total, method: payMethod, items: tablesData[curTable].items };
         let updates = {};
         updates['active_shift/history/' + Date.now()] = billData;
@@ -929,6 +829,7 @@
     function updateOptUI() { document.getElementById('optNong').className = curType==='Nóng'?'opt-btn active':'opt-btn'; document.getElementById('optDa').className = curType==='Đá'?'opt-btn active':'opt-btn'; }
     function calcChange() { let t = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,'')), c = parseInt(document.getElementById('cashIn').value)||0; document.getElementById('cashChange').innerText = (c-t>0?(c-t).toLocaleString():0)+"đ"; }
     
+    // CẬP NHẬT THÊM MÓN CÓ THÊM NHÓM
     function addMenu() { 
         const n = document.getElementById('inName').value;
         const p = parseInt(document.getElementById('inPrice').value);
@@ -941,6 +842,7 @@
         } 
     }
 
+    // CẬP NHẬT MENU ADMIN THÊM NÚT SỬA VÀ HIỂN THỊ NHÓM
     function renderAdminMenu() { 
         const d = document.getElementById('adminMenu'); d.innerHTML = ''; 
         Object.keys(menuData).forEach(k => { 
@@ -958,6 +860,7 @@
         }); 
     }
 
+    // HÀM MỞ MODAL SỬA MÓN
     function openEditMenu(key) {
         let item = menuData[key];
         document.getElementById('editMenuKey').value = key;
@@ -967,6 +870,7 @@
         document.getElementById('editMenuModal').style.display = 'flex';
     }
 
+    // HÀM LƯU MÓN SAU KHI SỬA
     function saveEditMenu() {
         let key = document.getElementById('editMenuKey').value;
         let n = document.getElementById('editMenuName').value;
