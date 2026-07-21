@@ -665,7 +665,7 @@
             let timeText = t.startTime ? `${Math.floor((new Date()-new Date(t.startTime))/60000)}p` : '';
             let statusDisplay = (tableTotal > 0 ? '' : 'Trống') + (timeText ? ` - ${timeText}` : '');
 
-            container.innerHTML += `<div class="table-card status-${t.status} ${curTable==i?'selected':''}" onclick="selectTable(${i})">
+            container.innerHTML += `<div class="table-card status-${t.status}" onclick="selectTable(${i})">
                 <div style="font-size:16px; margin-bottom:4px;">🖨️</div>
                 <span style="font-size:14px; font-weight:bold;">Bàn ${i}</span>
                 ${priceHtml}
