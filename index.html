@@ -178,8 +178,13 @@
     <div style="padding:15px; width:100%; overflow-y:auto; padding-bottom:100px;">
         <div id="managerTaskArea" style="display: none;">
             <h2 style="color: var(--dark);">📋 Quản Lý Giao Việc</h2>
+            
             <div class="admin-section">
-                <h3 style="margin-top:0;">Chọn nhân viên:</h3>
+                <!-- THÊM NÚT NHẬN VIỆC TẠI ĐÂY -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h3 style="margin:0;">Chọn nhân viên:</h3>
+                    <button onclick="openTransferTaskModal()" style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🔄 NHẬN VIỆC TỪ...</button>
+                </div>
                 <select id="taskEmployeeSelect" onchange="loadTasksForManager()" style="width:100%; padding:14px; border-radius:10px; border:1px solid #ddd; font-weight:bold; outline:none; background: white;"></select>
             </div>
             
@@ -275,6 +280,17 @@
             <button onclick="addMenu()" style="width:100%;padding:14px;background:var(--primary-gradient);color:white;border:none;border-radius:10px; font-weight: bold;">THÊM MÓN</button>
             <div id="adminMenu" style="margin-top:15px; max-height:300px; overflow-y:auto; padding-right: 5px;"></div>
         </div>
+    </div>
+</div>
+
+<!-- THÊM MODAL ĐỂ CHỌN NHÂN VIÊN CHUYỂN VIỆC -->
+<div id="transferTaskModal" class="modal-overlay">
+    <div class="modal">
+        <h3 style="margin-top:0; color: var(--dark);">Nhận việc từ nhân viên khác</h3>
+        <p style="font-size: 13px; color: gray;">Toàn bộ công việc của nhân viên được chọn sẽ bị xóa và bốc qua giao cho: <b id="transferTargetName" style="color:var(--primary)">...</b></p>
+        <select id="transferSourceSelect" style="width:100%; padding:15px; margin-bottom:20px; border-radius:10px; border:2px solid var(--primary); background:white; font-size:14px; font-weight:bold;"></select>
+        <button onclick="executeTaskTransfer()" style="width:100%; background:var(--primary-gradient); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold; margin-bottom: 10px;">XÁC NHẬN CHUYỂN</button>
+        <p onclick="closeModal('transferTaskModal')" style="text-align:center; margin-top:5px; color:gray; cursor:pointer; font-weight:bold;">Hủy</p>
     </div>
 </div>
 
@@ -609,7 +625,6 @@
         });
     }
 
-    /* == ĐÃ CẬP NHẬT: HIỂN THỊ THÊM TÊN NHÂN VIÊN/THIẾT BỊ BẤM THANH TOÁN TRONG BIỂU MẪU QUẢN LÝ BILL == */
     function renderActiveBills() {
         const section = document.getElementById('activeBillSection');
         const list = document.getElementById('activeBillsList'); list.innerHTML = '';
@@ -792,7 +807,6 @@
         setPayMethod('cash'); 
     }
 
-    /* == ĐÃ CẬP NHẬT: LƯU THÊM TRƯỜNG staff (TÊN NHÂN VIÊN/THIẾT BỊ) VÀO HÓA ĐƠN KHI THANH TOÁN == */
     function handlePay() {
         const total = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,''));
         
@@ -1128,6 +1142,59 @@
             db.ref(`tasks/${employeeKey}/${taskId}`).remove();
         }
     }
+
+    /* === THÊM CÁC HÀM XỬ LÝ CHUYỂN VIỆC === */
+    function openTransferTaskModal() {
+        const targetId = document.getElementById('taskEmployeeSelect').value;
+        if(!targetId) return alert("Vui lòng đăng ký và chọn nhân viên sẽ NHẬN việc trước!");
+        
+        document.getElementById('transferTargetName').innerText = allDevicesData[targetId].name;
+        
+        const sourceSelect = document.getElementById('transferSourceSelect');
+        sourceSelect.innerHTML = '<option value="">-- Chọn nhân viên để lấy việc --</option>';
+        
+        Object.keys(allDevicesData).forEach(key => {
+            if (key !== targetId) { // Không hiển thị chính nhân viên đang chọn
+                sourceSelect.innerHTML += `<option value="${key}">${allDevicesData[key].name}</option>`;
+            }
+        });
+        
+        document.getElementById('transferTaskModal').style.display = 'flex';
+    }
+
+    function executeTaskTransfer() {
+        const targetId = document.getElementById('taskEmployeeSelect').value;
+        const sourceId = document.getElementById('transferSourceSelect').value;
+        
+        if(!sourceId) return alert("Vui lòng chọn nhân viên nguồn!");
+        
+        // Lấy việc từ nhân viên nguồn
+        db.ref('tasks/' + sourceId).once('value').then(snapshot => {
+            const sourceTasks = snapshot.val();
+            if(!sourceTasks) {
+                alert("Nhân viên này không có công việc nào để chuyển!");
+                return;
+            }
+            
+            if(confirm(`Xác nhận chuyển toàn bộ việc? Việc của nhân viên cũ sẽ bị xóa hết.`)) {
+                let updates = {};
+                
+                // Copy sang nhân viên mới và xóa ở nhân viên cũ
+                Object.keys(sourceTasks).forEach(taskId => {
+                    let newKey = db.ref().child(`tasks/${targetId}`).push().key; // Sinh ID mới cho an toàn
+                    updates[`tasks/${targetId}/${newKey}`] = sourceTasks[taskId];
+                    updates[`tasks/${sourceId}/${taskId}`] = null; // Xóa khỏi nguồn
+                });
+                
+                db.ref().update(updates).then(() => {
+                    alert("Chuyển việc thành công!");
+                    closeModal('transferTaskModal');
+                    loadTasksForManager(); // Tải lại danh sách
+                });
+            }
+        });
+    }
+    /* ================================== */
 
     function loadTasksForEmployee() {
         const myDevId = localStorage.getItem('uc_dev_id');
