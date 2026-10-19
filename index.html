@@ -161,26 +161,44 @@
     <div id="list-tables" class="tables-grid"></div>
 
     <!-- Table Order / Bill View -->
-    <div id="table-order-view" class="order-container" style="display: none;">
-        <div id="menu-section-flex" class="menu-container-flex">
-            <div id="category-sidebar" class="category-sidebar"></div>
-            <div id="list-menu" class="menu-part-items"></div>
+    <div id="table-order-view" class="order-container" style="display: none; flex-direction: column;">
+        <!-- Top Title Bar like IMG_4470 -->
+        <div id="order-top-header" style="background: var(--primary); color: white; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; font-weight: bold; font-size: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button onclick="closeTableOrderView()" style="background: transparent; color: white; border: none; font-size: 18px; cursor: pointer; padding: 0 5px;">←</button>
+                <span id="orderHeaderTitle">BÀN 1 - MENU</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button onclick="openMoveTable()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold;">CHUYỂN</button>
+                <span style="font-size: 18px; cursor: pointer;" onclick="toggleOrderSubView()">⇆</span>
+            </div>
         </div>
 
-        <div id="bill-section-part" class="bill-part">
-            <div style="background: var(--dark); color: white; padding: 10px 12px; font-size: 12px; position: relative; display: flex; align-items: center; justify-content: space-between;">
-                <button onclick="closeTableOrderView()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">← QUAY LẠI</button>
-                <div style="text-align: right;">
-                    <b id="lblTable" style="font-size: 14px;">CHỌN BÀN...</b>
-                    <button onclick="openMoveTable()" style="background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.4); padding:3px 8px; border-radius:6px; font-size:10px; font-weight: bold; margin-left: 5px;">CHUYỂN</button>
-                    <div id="lblTotal" style="color: var(--warning); font-weight: 900; font-size: 16px; margin-top: 2px;">0đ</div>
+        <!-- Order Summary Bar like IMG_4470 -->
+        <div id="order-summary-bar" style="background: #2c3e50; color: white; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1a252f;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="background: var(--primary); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🛒</div>
+                <div>
+                    <div id="lblTableSummary" style="font-size: 13px; font-weight: bold;">BÀN 1 (0 món)</div>
+                    <div id="lblTotalSummary" style="color: #f39c12; font-weight: bold; font-size: 14px;">0đ</div>
                 </div>
             </div>
-            <div id="billItems" class="bill-items-area"></div>
-            <div class="pos-controls">
-                <button onclick="handleConfirm()" style="background:var(--danger-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px;">XÁC NHẬN</button>
-                <button onclick="setStatus('green')" style="background:var(--success-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px;">XONG HẾT</button>
-                <button onclick="openPayModal()" style="grid-column: span 2; background:var(--dark); color:white; border:none; padding:15px; border-radius:10px; font-weight:bold; font-size: 14px;">THANH TOÁN</button>
+            <button id="btnToggleOrderView" onclick="toggleOrderSubView()" style="background: transparent; color: white; border: none; font-size: 13px; font-weight: bold; cursor: pointer;">Xem đơn &gt;</button>
+        </div>
+
+        <div style="display: flex; flex: 1; overflow: hidden; position: relative;">
+            <div id="menu-section-flex" class="menu-container-flex" style="width: 100%;">
+                <div id="category-sidebar" class="category-sidebar"></div>
+                <div id="list-menu" class="menu-part-items"></div>
+            </div>
+
+            <div id="bill-section-part" class="bill-part" style="width: 100%; display: none;">
+                <div id="billItems" class="bill-items-area"></div>
+                <div class="pos-controls">
+                    <button onclick="handleConfirm()" style="background:var(--danger-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px;">XÁC NHẬN</button>
+                    <button onclick="setStatus('green')" style="background:var(--success-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px;">XONG HẾT</button>
+                    <button onclick="openPayModal()" style="grid-column: span 2; background:var(--dark); color:white; border:none; padding:15px; border-radius:10px; font-weight:bold; font-size: 14px;">THANH TOÁN</button>
+                </div>
             </div>
         </div>
     </div>
@@ -388,6 +406,8 @@
 
 <div class="mobile-bottom-nav">
     <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
+    <div class="m-btn" id="btn-tab-pos" onclick="showTab('pos')">☕ POS</div>
+    <div class="m-btn" id="btn-tab-tasks" onclick="showTab('tasks')">📋 VIỆC</div>
     <div class="m-btn" id="btn-tab-store" onclick="showTab('store')">🏪 CỬA HÀNG</div>
 </div>
 
@@ -671,8 +691,7 @@
             let staffDisplay = bill.payStaff ? ` | 💳 TT: <span style="color: var(--primary); font-weight: 800;">${bill.payStaff}</span>` : (bill.staff ? ` | 👤 ${bill.staff}` : '');
             let timeDetail = `Vào: ${bill.startTime || 'N/A'} - Ra: ${bill.payTime || bill.time || 'N/A'}`;
             let itemsHtml = (bill.items || []).map((it, idx) => {
-                let orderStaffDetail = it.orderStaff ? `<span style="color:gray; font-size:10px; margin-left:4px;">(NV order: ${it.orderStaff})</span>` : '';
-                return `<div class="detail-item"><span><b>${it.qty}x</b> ${it.fName} ${orderStaffDetail}</span><span>${(it.price * it.qty).toLocaleString()}đ <span style="color:var(--danger); cursor:pointer; font-weight:bold; margin-left:5px;" onclick="deleteItemInBill('${key}', ${idx})"> (X)</span></span></div>`;
+                return `<div class="detail-item"><span><b>${it.qty}x</b> ${it.fName}</span><span>${(it.price * it.qty).toLocaleString()}đ <span style="color:var(--danger); cursor:pointer; font-weight:bold; margin-left:5px;" onclick="deleteItemInBill('${key}', ${idx})"> (X)</span></span></div>`;
             }).join('');
             list.innerHTML += `<div class="bill-history-card"><div style="margin-bottom:8px;"><b>Bàn ${bill.table} (${timeDetail})${staffDisplay} - <span style="color:${bill.method === 'transfer' ? 'var(--primary)' : 'var(--success)'}">${bill.method === 'transfer' ? '💳 CK' : '💵 TM'}</span></b><button style="float:right; color:white; background:var(--danger); border:none; border-radius:4px; font-weight:bold; padding:4px 8px; font-size:10px;" onclick="deleteBill('${key}')">XÓA</button></div>${itemsHtml}<div style="color:var(--primary); font-weight:900; margin-top:10px; border-top:1px solid #eee; padding-top:8px; font-size:15px;">Tổng: ${bill.total.toLocaleString()}đ</div></div>`;
         });
@@ -785,22 +804,50 @@
         }
     }
 
+    let currentOrderSubView = 'menu'; // 'menu' or 'bill'
+
     function selectTable(i) {
         curTable = i;
-        document.getElementById('lblTable').innerText = "BÀN " + i;
+        document.getElementById('orderHeaderTitle').innerText = "BÀN " + i + " - MENU";
         document.getElementById('list-tables').style.display = 'none';
         document.getElementById('table-subtabs').style.display = 'none';
         document.getElementById('table-order-view').style.display = 'flex';
 
         if (currentTableSubTab === 'bills') {
-            document.getElementById('menu-section-flex').style.display = 'none';
-            document.getElementById('bill-section-part').style.width = '100%';
+            setOrderSubView('bill');
         } else {
-            document.getElementById('menu-section-flex').style.display = 'flex';
-            document.getElementById('bill-section-part').style.width = '45%';
+            setOrderSubView('menu');
         }
 
         renderBill();
+    }
+
+    function setOrderSubView(view) {
+        currentOrderSubView = view;
+        const menuSec = document.getElementById('menu-section-flex');
+        const billSec = document.getElementById('bill-section-part');
+        const btnToggle = document.getElementById('btnToggleOrderView');
+        const headerTitle = document.getElementById('orderHeaderTitle');
+
+        if (view === 'bill') {
+            menuSec.style.display = 'none';
+            billSec.style.display = 'flex';
+            btnToggle.innerText = '← CHỌN MÓN';
+            headerTitle.innerText = "BÀN " + curTable + " - HOÁ ĐƠN";
+        } else {
+            menuSec.style.display = 'flex';
+            billSec.style.display = 'none';
+            btnToggle.innerText = 'Xem đơn >';
+            headerTitle.innerText = "BÀN " + curTable + " - MENU";
+        }
+    }
+
+    function toggleOrderSubView() {
+        if (currentOrderSubView === 'menu') {
+            setOrderSubView('bill');
+        } else {
+            setOrderSubView('menu');
+        }
     }
 
     function renderMenu() {
@@ -823,21 +870,26 @@
             });
         });
 
+        // Add "Tất cả" option
+        sb.innerHTML += `<div class="cat-btn active" onclick="scrollToCat('cat-all', this)">Tất cả</div>`;
+
         let isFirst = true;
         for (let cat in grouped) {
             let catId = "cat-" + cat.replace(/\s+/g, '-').toLowerCase();
 
-            sb.innerHTML += `<div class="cat-btn ${isFirst ? 'active' : ''}" onclick="scrollToCat('${catId}', this)">${cat}</div>`;
+            sb.innerHTML += `<div class="cat-btn" onclick="scrollToCat('${catId}', this)">${cat}</div>`;
+
+            let headerAttr = isFirst ? 'id="cat-all"' : '';
             isFirst = false;
 
-            m.innerHTML += `<div id="${catId}" class="cat-header">${cat}</div>`;
+            m.innerHTML += `<div ${headerAttr} id="${catId}" class="cat-header">${cat}</div>`;
 
             grouped[cat].forEach(it => {
                 let hasHC = it.hasHotCold !== false;
                 if (it.soldOut) {
-                    m.innerHTML += `<div class="menu-item sold-out">${it.name}<br><span style="color:var(--danger); font-size:11px; font-weight:900; margin-top:2px; display:inline-block;">HẾT MÓN</span><br><span style="font-size: 12px; margin-top:2px; display:inline-block;">${it.price/1000}k</span></div>`;
+                    m.innerHTML += `<div class="menu-item sold-out"><div style="color:var(--dark); font-weight:bold;">${it.name}</div><span style="color:var(--danger); font-size:11px; font-weight:900; margin-top:2px; display:inline-block;">HẾT MÓN</span><br><span style="color:var(--primary); font-size: 13px; font-weight:bold; margin-top:2px; display:inline-block;">${it.price/1000}k</span></div>`;
                 } else {
-                    m.innerHTML += `<div class="menu-item" onclick="openOpt('${it.name}', ${it.price}, ${hasHC})">${it.name}<br><span style="color:var(--primary); font-size: 14px; margin-top:4px; display:inline-block;">${it.price/1000}k</span></div>`;
+                    m.innerHTML += `<div class="menu-item" onclick="openOpt('${it.name}', ${it.price}, ${hasHC})"><div style="color:var(--dark); font-weight:bold;">${it.name}</div><span style="color:var(--primary); font-size: 13px; font-weight:bold; margin-top:6px; display:inline-block;">${it.price/1000}k</span></div>`;
                 }
             });
         }
@@ -902,13 +954,22 @@
     }
 
     function renderBill() {
-        const b = document.getElementById('billItems'); b.innerHTML = ''; let total = 0;
+        const b = document.getElementById('billItems'); b.innerHTML = ''; let total = 0; let totalQty = 0;
         let items = tablesData[curTable]?.items || [];
         items.forEach((it, idx) => {
             total += it.price * it.qty;
+            totalQty += it.qty;
             b.innerHTML += `<div class="bill-row" onclick="openQtyEdit(${idx})"><span class="${!it.done?'item-not-done':''}" style="font-size:14px; margin-bottom:4px;"><b style="color:var(--primary)">${it.qty}x</b> ${it.fName}</span><span style="color:#555; font-weight:bold;">${(it.price * it.qty).toLocaleString()}đ</span></div>`;
         });
-        document.getElementById('lblTotal').innerText = total.toLocaleString() + "đ";
+
+        const totalFormatted = total.toLocaleString() + "đ";
+        const tableSummaryText = `BÀN ${curTable || 1} (${totalQty} món)`;
+
+        const lblSummary = document.getElementById('lblTableSummary');
+        if (lblSummary) lblSummary.innerText = tableSummaryText;
+
+        const lblTotalSum = document.getElementById('lblTotalSummary');
+        if (lblTotalSum) lblTotalSum.innerText = totalFormatted;
     }
 
     function handleConfirm() { if(!curTable) return; db.ref('tables/'+curTable).update({status: 'red'}); closeTableOrderView(); renderTables(); }
@@ -924,7 +985,7 @@
             return;
         }
 
-        const total = parseInt(document.getElementById('lblTotal').innerText.replace(/\D/g,''));
+        const total = parseInt(document.getElementById('lblTotalSummary').innerText.replace(/\D/g,'')) || 0;
         document.getElementById('payTotal').innerText = total.toLocaleString() + "đ";
         document.getElementById('payModal').style.display = 'flex';
         setPayMethod('cash');
@@ -969,7 +1030,7 @@
         editIdx = idx; let it = tablesData[curTable].items[idx];
         document.getElementById('qtyName').innerText = it.fName;
         document.getElementById('qtyVal').innerText = it.qty;
-        document.getElementById('editItemNote').value = '';
+        document.getElementById('editItemNote').value = it.note || '';
         document.getElementById('qtyModal').style.display = 'flex';
     }
     function changeQty(v) { let q = parseInt(document.getElementById('qtyVal').innerText) + v; if(q > 0) document.getElementById('qtyVal').innerText = q; }
@@ -978,8 +1039,14 @@
         let items = tablesData[curTable].items;
         items[editIdx].qty = parseInt(document.getElementById('qtyVal').innerText);
         let addedNote = document.getElementById('editItemNote').value.trim();
-        if (addedNote) {
-            items[editIdx].fName += ` (${addedNote})`;
+
+        items[editIdx].note = addedNote;
+        if (addedNote && !items[editIdx].fName.includes(`: ${addedNote}`)) {
+            if (items[editIdx].fName.includes(': ')) {
+                items[editIdx].fName = items[editIdx].fName.split(': ')[0] + ': ' + addedNote;
+            } else {
+                items[editIdx].fName += `: ${addedNote}`;
+            }
         }
         items[editIdx].done = true;
         db.ref('tables/'+curTable).update({items: items});
@@ -1065,7 +1132,24 @@
     function updateShiftUI() {
         const s = document.getElementById('shiftSummary');
         if(currentShift) {
-            s.innerHTML = `Mở lúc: ${currentShift.start}<br>💵 TM: <b style="color:var(--success);">${(currentShift.revenueCash||0).toLocaleString()}đ</b> | 💳 CK: <b style="color:var(--primary);">${(currentShift.revenueTransfer||0).toLocaleString()}đ</b><br>Tổng ca: <b style="color:var(--danger); font-size:20px; display:inline-block; margin-top:8px;">${(currentShift.revenue||0).toLocaleString()}đ</b>`;
+            let staffRevenue = {};
+            if (currentShift.history) {
+                Object.values(currentShift.history).forEach(bill => {
+                    let staffName = bill.payStaff || bill.staff || "Chưa xác định";
+                    staffRevenue[staffName] = (staffRevenue[staffName] || 0) + (bill.total || 0);
+                });
+            }
+
+            let staffBreakdownHtml = "";
+            Object.keys(staffRevenue).forEach(staff => {
+                staffBreakdownHtml += `<div style="font-size:14px; font-weight:bold; color:var(--dark); margin-top:3px;">${staff} : ${staffRevenue[staff].toLocaleString()}đ</div>`;
+            });
+
+            if (!staffBreakdownHtml) {
+                staffBreakdownHtml = `<div style="font-size:13px; color:gray; margin-top:3px;">Chưa có doanh thu theo nhân viên</div>`;
+            }
+
+            s.innerHTML = `Mở lúc: ${currentShift.start}<br>💵 TM: <b style="color:var(--success);">${(currentShift.revenueCash||0).toLocaleString()}đ</b> | 💳 CK: <b style="color:var(--primary);">${(currentShift.revenueTransfer||0).toLocaleString()}đ</b><br><br><b>Doanh thu theo nhân viên:</b><br>${staffBreakdownHtml}<br>Tổng doanh thu: <b style="color:var(--danger); font-size:20px; display:inline-block; margin-top:8px;">${(currentShift.revenue||0).toLocaleString()}đ</b>`;
             document.getElementById('btnOpen').style.display='none'; document.getElementById('btnClose').style.display='block';
         } else { s.innerText = "Chưa mở ca"; document.getElementById('btnOpen').style.display='block'; document.getElementById('btnClose').style.display='none'; }
     }
@@ -1083,6 +1167,8 @@
         if(id === 'tables') {
             closeTableOrderView();
             renderTables();
+        } else if(id === 'pos') {
+            showTab('tables');
         } else if(id === 'tasks') {
             initTasksTab();
         }
