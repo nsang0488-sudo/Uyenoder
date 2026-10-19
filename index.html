@@ -374,7 +374,7 @@
 </div>
 
 <div id="optModal" class="modal-overlay"><div class="modal"><h3 id="optTitle" style="margin-top:0; color:var(--dark); text-align:center;"></h3><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;"><button id="optNong" class="opt-btn" onclick="curType='Nóng'; updateOptUI()">NÓNG</button><button id="optDa" class="opt-btn" onclick="curType='Đá'; updateOptUI()">ĐÁ</button></div><input id="optNote" placeholder="Ghi chú..." style="width:100%; padding:15px; border:1px solid #ddd; border-radius:10px; margin-bottom:20px; background:white;"><button onclick="confirmAdd()" style="width:100%; background:var(--primary-gradient); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold;">THÊM VÀO ĐƠN</button><p onclick="closeModal('optModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer; font-weight:bold;">Hủy</p></div></div>
-<div id="qtyModal" class="modal-overlay"><div class="modal"><h3 style="margin-top:0;">Sửa món</h3><p id="qtyName" style="font-weight:bold; color:var(--primary); font-size:16px; text-align:center;"></p><div style="display:flex; justify-content:center; align-items:center; gap:20px; margin:20px 0;"><button class="opt-btn" style="width:60px; height:60px; font-size:24px; border-radius:15px;" onclick="changeQty(-1)">-</button><b id="qtyVal" style="font-size:35px; width: 40px; text-align:center;">1</b><button class="opt-btn" style="width:60px; height:60px; font-size:24px; border-radius:15px;" onclick="changeQty(1)">+</button></div><input id="editItemNote" placeholder="Thêm ghi chú món..." style="width:100%; padding:14px; border:1px solid #ddd; border-radius:10px; margin-bottom:15px; background:white;"><button onclick="toggleItemDone()" style="width:100%; background:var(--primary-gradient); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold; margin-bottom:12px;">LƯU / XÓNG</button><button onclick="deleteCurrentItem()" style="width:100%; background:var(--danger-gradient); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold;">XÓA MÓN</button><p onclick="closeModal('qtyModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer; font-weight:bold;">Đóng</p></div></div>
+<div id="qtyModal" class="modal-overlay"><div class="modal"><h3 style="margin-top:0;">Sửa món</h3><p id="qtyName" style="font-weight:bold; color:var(--primary); font-size:16px; text-align:center;"></p><div style="display:flex; justify-content:center; align-items:center; gap:20px; margin:20px 0;"><button class="opt-btn" style="width:60px; height:60px; font-size:24px; border-radius:15px;" onclick="changeQty(-1)">-</button><b id="qtyVal" style="font-size:35px; width: 40px; text-align:center;">1</b><button class="opt-btn" style="width:60px; height:60px; font-size:24px; border-radius:15px;" onclick="changeQty(1)">+</button></div><input id="editItemNote" placeholder="Thêm ghi chú món..." style="width:100%; padding:14px; border:1px solid #ddd; border-radius:10px; margin-bottom:15px; background:white;"><button onclick="saveItemEdit()" style="width:100%; background:var(--primary-gradient); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold; margin-bottom:12px;">LƯU</button><button id="btnItemDone" onclick="toggleItemDone()" style="width:100%; background:var(--success-gradient); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold;">XONG</button><p onclick="closeModal('qtyModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer; font-weight:bold;">Đóng</p></div></div>
 
 <div id="moveTableModal" class="modal-overlay">
     <div class="modal">
@@ -406,8 +406,6 @@
 
 <div class="mobile-bottom-nav">
     <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
-    <div class="m-btn" id="btn-tab-pos" onclick="showTab('pos')">☕ POS</div>
-    <div class="m-btn" id="btn-tab-tasks" onclick="showTab('tasks')">📋 VIỆC</div>
     <div class="m-btn" id="btn-tab-store" onclick="showTab('store')">🏪 CỬA HÀNG</div>
 </div>
 
@@ -1031,44 +1029,130 @@
         document.getElementById('qtyName').innerText = it.fName;
         document.getElementById('qtyVal').innerText = it.qty;
         document.getElementById('editItemNote').value = it.note || '';
-        document.getElementById('qtyModal').style.display = 'flex';
-    }
-    function changeQty(v) { let q = parseInt(document.getElementById('qtyVal').innerText) + v; if(q > 0) document.getElementById('qtyVal').innerText = q; }
-
-    function toggleItemDone() {
-        let items = tablesData[curTable].items;
-        items[editIdx].qty = parseInt(document.getElementById('qtyVal').innerText);
-        let addedNote = document.getElementById('editItemNote').value.trim();
-
-        items[editIdx].note = addedNote;
-        if (addedNote && !items[editIdx].fName.includes(`: ${addedNote}`)) {
-            if (items[editIdx].fName.includes(': ')) {
-                items[editIdx].fName = items[editIdx].fName.split(': ')[0] + ': ' + addedNote;
+        const btnDone = document.getElementById('btnItemDone');
+        if (btnDone) {
+            if (it.done) {
+                btnDone.innerText = 'ĐÃ XONG';
+                btnDone.style.background = 'var(--success-gradient)';
             } else {
-                items[editIdx].fName += `: ${addedNote}`;
+                btnDone.innerText = 'XONG';
+                btnDone.style.background = 'var(--dark)';
             }
         }
-        items[editIdx].done = true;
-        db.ref('tables/'+curTable).update({items: items});
-        closeModal('qtyModal');
+        document.getElementById('qtyModal').style.display = 'flex';
+    }
+    function changeQty(v) { let q = parseInt(document.getElementById('qtyVal').innerText) + v; if(q >= 0) document.getElementById('qtyVal').innerText = q; }
+
+    function saveItemEdit() {
+        if (curTable === null || editIdx === null) return;
+        let items = tablesData[curTable].items || [];
+        if (!items[editIdx]) return;
+
+        let item = items[editIdx];
+        let oldQty = item.qty || 1;
+        let newQty = parseInt(document.getElementById('qtyVal').innerText) || 0;
+        let addedNote = document.getElementById('editItemNote').value.trim();
+
+        if (newQty === 0) {
+            items.splice(editIdx, 1);
+            if (items.length === 0) {
+                db.ref('tables/' + curTable).remove().then(() => {
+                    closeModal('qtyModal');
+                    renderBill();
+                    renderTables();
+                });
+                return;
+            } else {
+                db.ref('tables/' + curTable).update({ items: items }).then(() => {
+                    closeModal('qtyModal');
+                    renderBill();
+                });
+                return;
+            }
+        }
+
+        function applyNote(it, note) {
+            it.note = note;
+            if (note) {
+                if (it.fName.includes(': ')) {
+                    it.fName = it.fName.split(': ')[0] + ': ' + note;
+                } else {
+                    it.fName += `: ${note}`;
+                }
+            }
+        }
+
+        if (item.done) {
+            if (newQty > oldQty) {
+                applyNote(item, addedNote);
+                let newItem = {
+                    fName: item.fName,
+                    price: item.price,
+                    qty: newQty - oldQty,
+                    done: false,
+                    note: addedNote,
+                    orderStaff: item.orderStaff || "Admin"
+                };
+                items.splice(editIdx + 1, 0, newItem);
+            } else {
+                item.qty = newQty;
+                applyNote(item, addedNote);
+                item.done = false;
+            }
+        } else {
+            item.qty = newQty;
+            applyNote(item, addedNote);
+            item.done = false;
+        }
+
+        db.ref('tables/' + curTable).update({ items: items }).then(() => {
+            closeModal('qtyModal');
+            renderBill();
+        });
     }
 
-    function deleteCurrentItem() {
-        let items = tablesData[curTable].items;
-        items.splice(editIdx, 1);
+    function toggleItemDone() {
+        if (curTable === null || editIdx === null) return;
+        let items = tablesData[curTable].items || [];
+        if (!items[editIdx]) return;
 
-        if (items.length === 0) {
-            db.ref('tables/'+curTable).remove().then(() => {
-                closeModal('qtyModal');
-                renderBill();
-                renderTables();
-            });
-        } else {
-            db.ref('tables/'+curTable).update({items: items}).then(() => {
-                closeModal('qtyModal');
-                renderBill();
-            });
+        let item = items[editIdx];
+        let newQty = parseInt(document.getElementById('qtyVal').innerText) || 0;
+        let addedNote = document.getElementById('editItemNote').value.trim();
+
+        if (newQty === 0) {
+            items.splice(editIdx, 1);
+            if (items.length === 0) {
+                db.ref('tables/' + curTable).remove().then(() => {
+                    closeModal('qtyModal');
+                    renderBill();
+                    renderTables();
+                });
+                return;
+            } else {
+                db.ref('tables/' + curTable).update({ items: items }).then(() => {
+                    closeModal('qtyModal');
+                    renderBill();
+                });
+                return;
+            }
         }
+
+        item.qty = newQty;
+        item.note = addedNote;
+        if (addedNote) {
+            if (item.fName.includes(': ')) {
+                item.fName = item.fName.split(': ')[0] + ': ' + addedNote;
+            } else {
+                item.fName += `: ${addedNote}`;
+            }
+        }
+        item.done = !item.done;
+
+        db.ref('tables/' + curTable).update({ items: items }).then(() => {
+            closeModal('qtyModal');
+            renderBill();
+        });
     }
 
     function openMoveTable() {
