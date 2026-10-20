@@ -56,7 +56,7 @@
         .bill-part { width: 45%; display: flex; flex-direction: column; border-left: 1px solid #ddd; height: 100%; background: #ffffff; }
         .bill-items-area { flex: 1; overflow-y: auto; background: transparent; scroll-behavior: smooth; padding: 5px; }
 
-        .pos-controls { padding: 12px; background: #f9f9f9; border-top: 1px solid #ddd; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex-shrink: 0; }
+        .pos-controls { padding: 12px; background: #f9f9f9; border-top: 1px solid #ddd; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 
         .table-card {
             background: #ffffff; height: 105px;
@@ -75,18 +75,18 @@
         .menu-item {
             background: #ffffff;
             border: 1px solid #c8d6e5;
-            padding: 10px 6px;
+            padding: 12px 8px;
             border-radius: 10px;
             text-align: center;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 13px;
             cursor: pointer;
             position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 58px;
+            min-height: 72px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
             user-select: none;
             -webkit-user-select: none;
@@ -140,13 +140,13 @@
             .category-sidebar { width: 60px; }
             .cat-btn { padding: 12px 2px; font-size: 10px; word-break: break-word; }
             .menu-part-items { grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 6px; }
-            .menu-item { padding: 8px 4px; font-size: 12px; min-height: 52px; }
+            .menu-item { padding: 10px 5px; font-size: 12px; min-height: 68px; }
             .cat-header { font-size: 13px; margin: 5px 0; }
             #lblTable { font-size: 12px !important; }
             #lblTotal { font-size: 15px !important; }
             .bill-row { font-size: 11px; padding: 8px 5px; }
             .pos-controls { display: flex; flex-direction: column; padding: 8px; gap: 6px; }
-            .pos-controls button { width: 100%; padding: 12px; font-size: 11px !important; margin: 0; }
+            .pos-controls button { padding: 12px; font-size: 11px !important; margin: 0; }
         }
     </style>
 </head>
@@ -216,11 +216,13 @@
 
             <div id="bill-section-part" class="bill-part" style="width: 100%; display: none;">
                 <div id="billItems" class="bill-items-area"></div>
-                <div class="pos-controls" style="grid-template-columns: 1fr 1fr;">
-                    <button onclick="handleConfirm()" style="background:var(--danger-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px;">XÁC NHẬN</button>
-                    <button onclick="setStatus('green')" style="background:var(--success-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px;">XONG HẾT</button>
-                    <button onclick="deleteActiveTableBill()" style="background:var(--danger); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px; display:flex; align-items:center; justify-content:center; gap:4px;">🗑️ XÓA BILL</button>
-                    <button onclick="openPayModal()" style="background:var(--dark); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size: 13px;">THANH TOÁN</button>
+                <div class="pos-controls">
+                    <div style="display: flex; gap: 6px; width: 100%;">
+                        <button onclick="handleConfirm()" style="flex: 1; background:var(--danger-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px;">XÁC NHẬN</button>
+                        <button onclick="setStatus('green')" style="flex: 1; background:var(--success-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px;">XONG HẾT</button>
+                        <button onclick="deleteActiveTableBill()" style="background:var(--danger); color:white; border:none; padding:12px 14px; border-radius:10px; font-weight:bold; font-size:14px; display:flex; align-items:center; justify-content:center;" title="Xóa bill">🗑️</button>
+                    </div>
+                    <button onclick="openPayModal()" style="width: 100%; background:var(--dark); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size: 13px;">THANH TOÁN</button>
                 </div>
             </div>
         </div>
