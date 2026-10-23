@@ -1056,7 +1056,7 @@
 
         if (!hasHotCold) {
             let items = tablesData[curTable]?.items || [];
-            // Thêm cờ sent: false để nhận diện món mới chưa in
+            // Đã bổ sung sent: false cho món mới
             items.unshift({fName: name, price: price, qty: 1, done: false, sent: false, orderStaff: staffName});
             db.ref('tables/'+curTable).update({ items: items, startTime: tablesData[curTable]?.startTime || new Date().toLocaleTimeString('vi-VN'), status: tablesData[curTable]?.status === 'green' ? 'green' : 'white' });
             return;
@@ -1073,7 +1073,7 @@
         let note = document.getElementById('optNote').value.trim();
         let fullName = `${tempItem.name} (${curType})${note ? ': ' + note : ''}`;
         let items = tablesData[curTable]?.items || [];
-        // Thêm cờ sent: false để nhận diện món mới chưa in
+        // Đã bổ sung sent: false cho món mới
         items.unshift({fName: fullName, price: tempItem.price, qty: 1, done: false, sent: false, orderStaff: tempItem.staffName || "Admin"});
         db.ref('tables/'+curTable).update({ items: items, startTime: tablesData[curTable]?.startTime || new Date().toLocaleTimeString('vi-VN'), status: tablesData[curTable]?.status === 'green' ? 'green' : 'white' });
 
@@ -1107,8 +1107,13 @@
         let tableData = tablesData[curTable];
         let items = tableData?.items || [];
 
-        // Lọc ra các món chưa gửi bếp/chưa in (sent !== true)
-        let newItems = items.filter(it => !it.sent);
+        // Đảm bảo các món cũ không có thuộc tính sent được xử lý là đã in (true)
+        items.forEach(it => {
+            if (it.sent === undefined) it.sent = true;
+        });
+
+        // Lọc ra các món chưa gửi bếp (sent === false)
+        let newItems = items.filter(it => it.sent === false);
 
         if (newItems.length === 0) {
             alert("Không có món mới nào cần xác nhận in!");
@@ -1117,16 +1122,22 @@
 
         db.ref('tables/'+curTable).update({status: 'red'}); 
 
+        // Gắn printedItem: false để app máy in nhận diện đúng đơn
+        let preparedItems = newItems.map(it => ({
+            ...it,
+            printedItem: false
+        }));
+
         let orderPayload = {
-            type: 'kitchen', // Đánh dấu là phiếu Order (bếp)
+            type: 'kitchen',
             table: curTable,
-            items: newItems, // Chỉ gửi các món mới phát sinh
+            items: preparedItems,
             timestamp: Date.now(),
             printed: false
         };
         db.ref('orders').push(orderPayload);
 
-        // Đánh dấu tất cả các món hiện tại thành đã gửi (sent = true) để không bị in lại lần sau
+        // Đánh dấu tất cả món hiện tại thành đã gửi (sent = true)
         items.forEach(it => {
             it.sent = true;
         });
