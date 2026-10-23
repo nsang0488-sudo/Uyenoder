@@ -66,7 +66,6 @@
             color: var(--dark);
         }
         .table-card:active { transform: scale(0.95); }
-        /* == ĐÃ CHỈNH SỬA MÀU ĐỎ & XANH ĐẬM HƠN DỄ NHÌN == */
         .table-card.status-red { border: 2px solid #dc3545; background: #ffb8c0; order: 1; }
         .table-card.status-green { border: 2px solid #28a745; background: #b8e6c1; order: 1; }
 
@@ -133,7 +132,6 @@
         button { cursor: pointer; }
         button:active { transform: scale(0.97); }
 
-        /* ====== BẢN VÁ CHO ĐIỆN THOẠI (GIAO DIỆN DỌC CÂN ĐỐI) ====== */
         @media (max-width: 768px) {
             .menu-container-flex { width: 60%; }
             .bill-part { width: 40%; }
@@ -172,18 +170,14 @@
 </div>
 
 <div id="tab-tables" class="tab-content active" style="flex-direction: column;">
-    <!-- Sub-tab Bar -->
     <div id="table-subtabs" style="display: flex; background: #ffffff; border-bottom: 1px solid #ddd; flex-shrink: 0;">
         <button id="subtab-btn-tables" onclick="switchTableSubTab('tables')" style="flex:1; padding: 12px; border: none; background: transparent; font-weight: bold; font-size: 13px; cursor: pointer; border-bottom: 3px solid var(--primary); color: var(--primary);">🪑 Tất cả bàn</button>
         <button id="subtab-btn-bills" onclick="switchTableSubTab('bills')" style="flex:1; padding: 12px; border: none; background: transparent; font-weight: bold; font-size: 13px; cursor: pointer; color: #666;">🧾 Hóa đơn chưa thanh toán</button>
     </div>
 
-    <!-- Table Grid -->
     <div id="list-tables" class="tables-grid"></div>
 
-    <!-- Table Order / Bill View -->
     <div id="table-order-view" class="order-container" style="display: none; flex-direction: column;">
-        <!-- Top Title Bar like IMG_4470 -->
         <div id="order-top-header" style="background: var(--primary); color: white; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; font-weight: bold; font-size: 16px;">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <button onclick="closeTableOrderView()" style="background: transparent; color: white; border: none; font-size: 18px; cursor: pointer; padding: 0 5px;">←</button>
@@ -196,7 +190,6 @@
             </div>
         </div>
 
-        <!-- Order Summary Bar like IMG_4470 -->
         <div id="order-summary-bar" style="background: #2c3e50; color: white; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1a252f;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <div style="background: var(--primary); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🛒</div>
@@ -235,7 +228,6 @@
             <h2 style="color: var(--dark);">📋 Quản Lý Giao Việc</h2>
 
             <div class="admin-section">
-                <!-- THÊM NÚT NHẬN VIỆC TẠI ĐÂY -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <h3 style="margin:0;">Chọn nhân viên:</h3>
                     <button onclick="openTransferTaskModal()" style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🔄 NHẬN VIỆC TỪ...</button>
@@ -356,7 +348,6 @@
     </div>
 </div>
 
-<!-- THÊM MODAL ĐỂ CHỌN NHÂN VIÊN CHUYỂN VIỆC -->
 <div id="transferTaskModal" class="modal-overlay">
     <div class="modal">
         <h3 style="margin-top:0; color: var(--dark);">Nhận việc từ nhân viên khác</h3>
@@ -913,7 +904,7 @@
             }
 
             if (currentTableSubTab === 'bills' && tableTotal === 0) {
-                continue; // Skip unoccupied tables when in "Hóa đơn" sub-tab
+                continue;
             }
             countVisible++;
 
@@ -938,7 +929,7 @@
         }
     }
 
-    let currentOrderSubView = 'menu'; // 'menu' or 'bill'
+    let currentOrderSubView = 'menu';
 
     function selectTable(i) {
         curTable = i;
@@ -1004,7 +995,6 @@
             });
         });
 
-        // Add "Tất cả" option
         sb.innerHTML += `<div class="cat-btn active" onclick="scrollToCat('cat-all', this)">Tất cả</div>`;
 
         let isFirst = true;
@@ -1107,7 +1097,7 @@
         if (lblTotalSum) lblTotalSum.innerText = totalFormatted;
     }
 
-    // ĐÃ ĐƯỢC TÍCH HỢP ĐẨY DỮ LIỆU SANG ORDERS ĐỂ APP APK IN ẤN
+    // 1. KHI BẤM XÁC NHẬN -> ĐẨY DỮ LIỆU ĐỂ IN PHIẾU ORDER
     function handleConfirm() { 
         if(!curTable) return; 
         db.ref('tables/'+curTable).update({status: 'red'}); 
@@ -1115,6 +1105,7 @@
         let tableData = tablesData[curTable];
         if (tableData && tableData.items && tableData.items.length > 0) {
             let orderPayload = {
+                type: 'kitchen', // Đánh dấu là phiếu Oder (bếp)
                 table: curTable,
                 items: tableData.items,
                 timestamp: Date.now(),
@@ -1145,6 +1136,7 @@
         setPayMethod('cash');
     }
 
+    // 2. KHI BẤM HOÀN TẤT THANH TOÁN -> HỎI CÓ IN HÓA ĐƠN KHÔNG
     function handlePay() {
         if(!checkShiftRequired()) return;
         const total = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,''));
@@ -1175,9 +1167,26 @@
         updates['active_shift/revenue'] = (currentShift.revenue||0) + total;
         if(payMethod === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) + total;
         else updates['active_shift/revenueTransfer'] = (currentShift.revenueTransfer||0) + total;
+        
         db.ref().update(updates);
+
+        // Hỏi người dùng có muốn in Hóa đơn thanh toán hay không
+        if (confirm("Thanh toán thành công! Bạn có muốn IN HÓA ĐƠN không?")) {
+            let receiptPayload = {
+                type: 'receipt', // Đánh dấu là Hóa đơn thanh toán
+                table: curTable,
+                items: tableInfo.items || [],
+                total: total,
+                timestamp: Date.now(),
+                printed: false
+            };
+            db.ref('orders').push(receiptPayload);
+        }
+
         db.ref('tables/'+curTable).remove();
-        closeModal('payModal'); closeTableOrderView(); renderTables();
+        closeModal('payModal'); 
+        closeTableOrderView(); 
+        renderTables(); 
     }
 
     function openQtyEdit(idx) {
@@ -1642,7 +1651,6 @@
         }
     }
 
-    /* === THÊM CÁC HÀM XỬ LÝ CHUYỂN VIỆC === */
     function openTransferTaskModal() {
         const targetId = document.getElementById('taskEmployeeSelect').value;
         if(!targetId) return alert("Vui lòng đăng ký và chọn nhân viên sẽ NHẬN việc trước!");
@@ -1653,7 +1661,7 @@
         sourceSelect.innerHTML = '<option value="">-- Chọn nhân viên để lấy việc --</option>';
 
         Object.keys(allDevicesData).forEach(key => {
-            if (key !== targetId) { // Không hiển thị chính nhân viên đang chọn
+            if (key !== targetId) {
                 sourceSelect.innerHTML += `<option value="${key}">${allDevicesData[key].name}</option>`;
             }
         });
@@ -1667,7 +1675,6 @@
 
         if(!sourceId) return alert("Vui lòng chọn nhân viên nguồn!");
 
-        // Lấy việc từ nhân viên nguồn
         db.ref('tasks/' + sourceId).once('value').then(snapshot => {
             const sourceTasks = snapshot.val();
             if(!sourceTasks) {
@@ -1678,22 +1685,20 @@
             if(confirm(`Xác nhận chuyển toàn bộ việc? Việc của nhân viên cũ sẽ bị xóa hết.`)) {
                 let updates = {};
 
-                // Copy sang nhân viên mới và xóa ở nhân viên cũ
                 Object.keys(sourceTasks).forEach(taskId => {
-                    let newKey = db.ref().child(`tasks/${targetId}`).push().key; // Sinh ID mới cho an toàn
+                    let newKey = db.ref().child(`tasks/${targetId}`).push().key;
                     updates[`tasks/${targetId}/${newKey}`] = sourceTasks[taskId];
-                    updates[`tasks/${sourceId}/${taskId}`] = null; // Xóa khỏi nguồn
+                    updates[`tasks/${sourceId}/${taskId}`] = null;
                 });
 
                 db.ref().update(updates).then(() => {
                     alert("Chuyển việc thành công!");
                     closeModal('transferTaskModal');
-                    loadTasksForManager(); // Tải lại danh sách
+                    loadTasksForManager();
                 });
             }
         });
     }
-    /* ================================== */
 
     function loadTasksForEmployee() {
         const myDevId = localStorage.getItem('uc_dev_id');
@@ -1784,10 +1789,8 @@
     document.addEventListener("visibilitychange", function() {
         if (document.visibilityState === 'hidden') {
             firebase.database().goOffline();
-            console.log("Tab ẩn -> Đã ngắt kết nối Firebase để tối ưu.");
         } else {
             firebase.database().goOnline();
-            console.log("Tab hiện -> Đã kết nối lại Firebase.");
         }
     });
 
