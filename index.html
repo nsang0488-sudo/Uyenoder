@@ -110,7 +110,7 @@
         .opt-btn { background: #fff; border: 1px solid #ddd; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; }
         .opt-btn.active { background: var(--primary); color: white; border: none; }
 
-        .qr-image-display { width: 100%; max-width: 200px; margin: 15px auto; display: none; border-radius: 10px; }
+        .qr-image-display { width: 100%; max-width: 180px; margin: 10px auto; display: none; border-radius: 10px; }
         .detail-item { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-top: 4px; border-bottom: 1px dotted #ddd; padding-bottom: 4px; }
 
         #authOverlay { background: #f4f7f6; display: flex; flex-direction: column; z-index: 999999; }
@@ -207,15 +207,32 @@
                 <div id="list-menu" class="menu-part-items"></div>
             </div>
 
+            <!-- MÀN HÌNH HÓA ĐƠN & THANH TOÁN TÍCH HỢP TRỰC TIẾP -->
             <div id="bill-section-part" class="bill-part" style="width: 100%; display: none;">
+                <div style="padding: 10px 12px; background: #f1f3f5; border-bottom: 1px solid #ddd; display: flex; gap: 6px; flex-shrink: 0;">
+                    <button onclick="handleConfirm()" style="flex: 1; background:var(--danger-gradient); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; font-size:11px;">XÁC NHẬN</button>
+                    <button onclick="setStatus('green')" style="flex: 1; background:var(--success-gradient); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; font-size:11px;">XONG HẾT</button>
+                    <button onclick="deleteActiveTableBill()" style="background:var(--danger); color:white; border:none; padding:10px 12px; border-radius:8px; font-weight:bold; font-size:12px;" title="Xóa bill">🗑️</button>
+                </div>
+
                 <div id="billItems" class="bill-items-area"></div>
+
                 <div class="pos-controls">
-                    <div style="display: flex; gap: 6px; width: 100%;">
-                        <button onclick="handleConfirm()" style="flex: 1; background:var(--danger-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px;">XÁC NHẬN</button>
-                        <button onclick="setStatus('green')" style="flex: 1; background:var(--success-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:12px;">XONG HẾT</button>
-                        <button onclick="deleteActiveTableBill()" style="background:var(--danger); color:white; border:none; padding:12px 14px; border-radius:10px; font-weight:bold; font-size:14px; display:flex; align-items:center; justify-content:center;" title="Xóa bill">🗑️</button>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                        <button id="payCashBtn" class="opt-btn active" onclick="setPayMethod('cash')">TIỀN MẶT</button>
+                        <button id="payTransferBtn" class="opt-btn" onclick="setPayMethod('transfer')">CHUYỂN KHOẢN</button>
                     </div>
-                    <button onclick="openPayModal()" style="width: 100%; background:var(--dark); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size: 13px;">THANH TOÁN</button>
+                    <div id="cashSection" style="margin-bottom: 6px;">
+                        <input type="number" id="cashIn" placeholder="Khách đưa..." style="width:100%; padding:12px; border:2px solid var(--primary); border-radius:10px; font-size: 14px; background: white;" oninput="calcChange()">
+                        <div style="margin:6px 0; font-size:15px; text-align: center;">Thối: <b id="cashChange" style="color:var(--success)">0đ</b></div>
+                    </div>
+                    <div id="transferSection" style="display:none; text-align:center; margin-bottom: 6px;">
+                        <img id="qrDisplay" class="qr-image-display" src="">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <button onclick="handlePay(false)" style="width: 100%; background:var(--dark); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size: 13px;">KHÔNG IN HĐ</button>
+                        <button onclick="handlePay(true)" style="width: 100%; background:var(--primary-gradient); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size: 13px;">IN HĐ</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -371,26 +388,6 @@
         </div>
         <button onclick="saveEditMenu()" style="width:100%; background:var(--primary-gradient); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold;">LƯU THAY ĐỔI</button>
         <p onclick="closeModal('editMenuModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer; font-weight:bold;">Hủy</p>
-    </div>
-</div>
-
-<div id="payModal" class="modal-overlay">
-    <div class="modal">
-        <h3 style="margin-top:0; color: var(--dark);">Thanh toán</h3>
-        <div style="font-size:22px; margin-bottom:15px; text-align: center;">Tổng: <b id="payTotal" style="color:var(--danger)">0</b></div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
-            <button id="payCashBtn" class="opt-btn" onclick="setPayMethod('cash')">TIỀN MẶT</button>
-            <button id="payTransferBtn" class="opt-btn" onclick="setPayMethod('transfer')">CHUYỂN KHOẢN</button>
-        </div>
-        <div id="cashSection">
-            <input type="number" id="cashIn" placeholder="Khách đưa..." style="width:100%; padding:18px; border:2px solid var(--primary); border-radius:12px; font-size: 16px; background: white;" oninput="calcChange()">
-            <div style="margin:20px 0; font-size:20px; text-align: center;">Thối: <b id="cashChange" style="color:var(--success)">0đ</b></div>
-        </div>
-        <div id="transferSection" style="display:none; text-align:center;">
-            <img id="qrDisplay" class="qr-image-display" src="">
-        </div>
-        <button onclick="handlePay()" style="width:100%; background:var(--dark); color:white; padding:16px; border:none; border-radius:12px; font-weight:bold; font-size: 15px;">HOÀN TẤT</button>
-        <p onclick="closeModal('payModal')" style="text-align:center; margin-top:15px; color:gray; cursor:pointer; font-weight: bold;">Hủy</p>
     </div>
 </div>
 
@@ -648,6 +645,7 @@
             alert("Lỗi khi xóa hóa đơn: " + err.message);
         });
     }
+
     db.ref('settings/qrUrl').on('value', s => {
         qrUrl = s.val() || "";
         let displayUrl = qrUrl;
@@ -959,6 +957,11 @@
             billSec.style.display = 'flex';
             btnToggle.innerText = '← CHỌN MÓN';
             headerTitle.innerText = "BÀN " + curTable + " - HOÁ ĐƠN";
+            
+            // Khởi tạo mặc định thanh toán khi mở màn hình hóa đơn
+            setPayMethod('cash');
+            document.getElementById('cashIn').value = '';
+            calcChange();
         } else {
             menuSec.style.display = 'flex';
             billSec.style.display = 'none';
@@ -1095,6 +1098,9 @@
 
         const lblTotalSum = document.getElementById('lblTotalSummary');
         if (lblTotalSum) lblTotalSum.innerText = totalFormatted;
+
+        const cashChangeEl = document.getElementById('cashChange');
+        if (cashChangeEl) calcChange();
     }
 
     // 1. KHI BẤM XÁC NHẬN -> ĐẨY DỮ LIỆU ĐỂ IN PHIẾU ORDER
@@ -1120,9 +1126,10 @@
 
     function setStatus(s) { if(!curTable) return; let items = tablesData[curTable].items || []; items.forEach(it => it.done = true); db.ref('tables/'+curTable).update({items: items, status: s}); closeTableOrderView(); renderTables(); }
 
-    function openPayModal() {
-        if(!curTable || !tablesData[curTable]) return;
+    // 2. XỬ LÝ THANH TOÁN TRỰC TIẾP TRÊN MÀN HÌNH (IN HĐ / KHÔNG IN HĐ)
+    function handlePay(shouldPrint) {
         if(!checkShiftRequired()) return;
+        if(!curTable || !tablesData[curTable]) return;
 
         const role = getUserRole();
         if (role === 'Phục vụ') {
@@ -1130,16 +1137,8 @@
             return;
         }
 
-        const total = parseInt(document.getElementById('lblTotalSummary').innerText.replace(/\D/g,'')) || 0;
-        document.getElementById('payTotal').innerText = total.toLocaleString() + "đ";
-        document.getElementById('payModal').style.display = 'flex';
-        setPayMethod('cash');
-    }
-
-    // 2. KHI BẤM HOÀN TẤT THANH TOÁN -> HỎI CÓ IN HÓA ĐƠN KHÔNG
-    function handlePay() {
-        if(!checkShiftRequired()) return;
-        const total = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,''));
+        const total = (tablesData[curTable].items || []).reduce((sum, it) => sum + (it.price * it.qty), 0);
+        if (total <= 0) return alert("Bàn không có món để thanh toán!");
 
         let staffName = "Admin";
         const myDevId = localStorage.getItem('uc_dev_id');
@@ -1170,10 +1169,9 @@
         
         db.ref().update(updates);
 
-        // Hỏi người dùng có muốn in Hóa đơn thanh toán hay không
-        if (confirm("Thanh toán thành công! Bạn có muốn IN HÓA ĐƠN không?")) {
+        if (shouldPrint) {
             let receiptPayload = {
-                type: 'receipt', // Đánh dấu là Hóa đơn thanh toán
+                type: 'receipt', // Đánh dấu là Hóa đơn thanh toán để in
                 table: curTable,
                 items: tableInfo.items || [],
                 total: total,
@@ -1184,7 +1182,6 @@
         }
 
         db.ref('tables/'+curTable).remove();
-        closeModal('payModal'); 
         closeTableOrderView(); 
         renderTables(); 
     }
@@ -1406,7 +1403,27 @@
         }
     }
 
-    function setPayMethod(m) { payMethod = m; document.getElementById('payCashBtn').className = m==='cash'?'opt-btn active':'opt-btn'; document.getElementById('payTransferBtn').className = m==='transfer'?'opt-btn active':'opt-btn'; document.getElementById('cashSection').style.display = m==='cash'?'block':'none'; document.getElementById('transferSection').style.display = m==='transfer'?'block':'none'; document.getElementById('qrDisplay').style.display = (m==='transfer' && qrUrl)?'block':'none'; }
+    function setPayMethod(m) { 
+        payMethod = m; 
+        document.getElementById('payCashBtn').className = m==='cash'?'opt-btn active':'opt-btn'; 
+        document.getElementById('payTransferBtn').className = m==='transfer'?'opt-btn active':'opt-btn'; 
+        document.getElementById('cashSection').style.display = m==='cash'?'block':'none'; 
+        document.getElementById('transferSection').style.display = m==='transfer'?'block':'none'; 
+        document.getElementById('qrDisplay').style.display = (m==='transfer' && qrUrl)?'block':'none'; 
+    }
+
+    function calcChange() { 
+        let total = 0;
+        if (curTable && tablesData[curTable] && tablesData[curTable].items) {
+            tablesData[curTable].items.forEach(it => total += it.price * it.qty);
+        }
+        let c = parseInt(document.getElementById('cashIn').value) || 0; 
+        const changeEl = document.getElementById('cashChange');
+        if (changeEl) {
+            changeEl.innerText = (c - total > 0 ? (c - total).toLocaleString() : 0) + "đ"; 
+        }
+    }
+
     function updateShiftUI() {
         const s = document.getElementById('shiftSummary');
         if(currentShift) {
@@ -1454,7 +1471,6 @@
 
     function closeModal(id) { document.getElementById(id).style.display='none'; }
     function updateOptUI() { document.getElementById('optNong').className = curType==='Nóng'?'opt-btn active':'opt-btn'; document.getElementById('optDa').className = curType==='Đá'?'opt-btn active':'opt-btn'; }
-    function calcChange() { let t = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,'')), c = parseInt(document.getElementById('cashIn').value)||0; document.getElementById('cashChange').innerText = (c-t>0?(c-t).toLocaleString():0)+"đ"; }
 
     function addMenu() {
         const n = document.getElementById('inName').value;
