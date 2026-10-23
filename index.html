@@ -1056,7 +1056,8 @@
 
         if (!hasHotCold) {
             let items = tablesData[curTable]?.items || [];
-            items.unshift({fName: name, price: price, qty: 1, done: false, orderStaff: staffName});
+            // Thêm cờ sent: false để nhận diện món mới chưa in
+            items.unshift({fName: name, price: price, qty: 1, done: false, sent: false, orderStaff: staffName});
             db.ref('tables/'+curTable).update({ items: items, startTime: tablesData[curTable]?.startTime || new Date().toLocaleTimeString('vi-VN'), status: tablesData[curTable]?.status === 'green' ? 'green' : 'white' });
             return;
         }
@@ -1072,7 +1073,8 @@
         let note = document.getElementById('optNote').value.trim();
         let fullName = `${tempItem.name} (${curType})${note ? ': ' + note : ''}`;
         let items = tablesData[curTable]?.items || [];
-        items.unshift({fName: fullName, price: tempItem.price, qty: 1, done: false, orderStaff: tempItem.staffName || "Admin"});
+        // Thêm cờ sent: false để nhận diện món mới chưa in
+        items.unshift({fName: fullName, price: tempItem.price, qty: 1, done: false, sent: false, orderStaff: tempItem.staffName || "Admin"});
         db.ref('tables/'+curTable).update({ items: items, startTime: tablesData[curTable]?.startTime || new Date().toLocaleTimeString('vi-VN'), status: tablesData[curTable]?.status === 'green' ? 'green' : 'white' });
 
         document.getElementById('optNote').value = '';
@@ -1098,25 +1100,41 @@
         if (lblTotalSum) lblTotalSum.innerText = totalFormatted;
     }
 
-    // 1. KHI BẤM XÁC NHẬN -> ĐẨY DỮ LIỆU ĐỂ IN PHIẾU ORDER
+    // 1. KHI BẤM XÁC NHẬN -> CHỈ IN CÁC MÓN MỚI PHÁT SINH (CHƯA IN)
     function handleConfirm() { 
         if(!curTable) return; 
-        db.ref('tables/'+curTable).update({status: 'red'}); 
 
         let tableData = tablesData[curTable];
-        if (tableData && tableData.items && tableData.items.length > 0) {
-            let orderPayload = {
-                type: 'kitchen', // Đánh dấu là phiếu Oder (bếp)
-                table: curTable,
-                items: tableData.items,
-                timestamp: Date.now(),
-                printed: false
-            };
-            db.ref('orders').push(orderPayload);
+        let items = tableData?.items || [];
+
+        // Lọc ra các món chưa gửi bếp/chưa in (sent !== true)
+        let newItems = items.filter(it => !it.sent);
+
+        if (newItems.length === 0) {
+            alert("Không có món mới nào cần xác nhận in!");
+            return;
         }
 
-        closeTableOrderView(); 
-        renderTables(); 
+        db.ref('tables/'+curTable).update({status: 'red'}); 
+
+        let orderPayload = {
+            type: 'kitchen', // Đánh dấu là phiếu Order (bếp)
+            table: curTable,
+            items: newItems, // Chỉ gửi các món mới phát sinh
+            timestamp: Date.now(),
+            printed: false
+        };
+        db.ref('orders').push(orderPayload);
+
+        // Đánh dấu tất cả các món hiện tại thành đã gửi (sent = true) để không bị in lại lần sau
+        items.forEach(it => {
+            it.sent = true;
+        });
+
+        db.ref('tables/' + curTable + '/items').set(items).then(() => {
+            closeTableOrderView(); 
+            renderTables(); 
+        });
     }
 
     function setStatus(s) { if(!curTable) return; let items = tablesData[curTable].items || []; items.forEach(it => it.done = true); db.ref('tables/'+curTable).update({items: items, status: s}); closeTableOrderView(); renderTables(); }
@@ -1270,6 +1288,7 @@
                     price: item.price,
                     qty: newQty - oldQty,
                     done: false,
+                    sent: false, // Món tăng thêm là món mới chưa in
                     note: addedNote,
                     orderStaff: item.orderStaff || "Admin"
                 };
@@ -1489,7 +1508,7 @@
                     <button onclick="openEditMenu('${k}')" style="color:white; background:var(--dark); border:none; border-radius:6px; padding:6px 10px; font-weight:bold; font-size:11px;">Sửa</button>
                     <button onclick="db.ref('menu/${k}').remove()" style="color:white; background:var(--danger); border:none; border-radius:6px; padding:6px 10px; font-weight:bold; font-size:11px;">Xóa</button>
                 </div>
-            </div>`;
+            `;
         });
     }
 
