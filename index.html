@@ -445,7 +445,7 @@
         authDomain: "uyencoffeepos.firebaseapp.com",
         databaseURL: "https://uyencoffeepos-default-rtdb.asia-southeast1.firebasedatabase.app",
         projectId: "uyencoffeepos",
-        storageBucket: "uyencoffeepos.firebasedatabase.app",
+        storageBucket: "uyencoffeepos.firebasestorage.app",
         messagingSenderId: "320504505998",
         appId: "1:320504505998:web:267ba0c6e8a283b4dd8bdf"
     };
@@ -1107,7 +1107,26 @@
         if (lblTotalSum) lblTotalSum.innerText = totalFormatted;
     }
 
-    function handleConfirm() { if(!curTable) return; db.ref('tables/'+curTable).update({status: 'red'}); closeTableOrderView(); renderTables(); }
+    // ĐÃ ĐƯỢC TÍCH HỢP ĐẨY DỮ LIỆU SANG ORDERS ĐỂ APP APK IN ẤN
+    function handleConfirm() { 
+        if(!curTable) return; 
+        db.ref('tables/'+curTable).update({status: 'red'}); 
+
+        let tableData = tablesData[curTable];
+        if (tableData && tableData.items && tableData.items.length > 0) {
+            let orderPayload = {
+                table: curTable,
+                items: tableData.items,
+                timestamp: Date.now(),
+                printed: false
+            };
+            db.ref('orders').push(orderPayload);
+        }
+
+        closeTableOrderView(); 
+        renderTables(); 
+    }
+
     function setStatus(s) { if(!curTable) return; let items = tablesData[curTable].items || []; items.forEach(it => it.done = true); db.ref('tables/'+curTable).update({items: items, status: s}); closeTableOrderView(); renderTables(); }
 
     function openPayModal() {
