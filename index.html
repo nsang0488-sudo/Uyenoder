@@ -1056,7 +1056,6 @@
 
         if (!hasHotCold) {
             let items = tablesData[curTable]?.items || [];
-            // Đã bổ sung sent: false cho món mới
             items.unshift({fName: name, price: price, qty: 1, done: false, sent: false, orderStaff: staffName});
             db.ref('tables/'+curTable).update({ items: items, startTime: tablesData[curTable]?.startTime || new Date().toLocaleTimeString('vi-VN'), status: tablesData[curTable]?.status === 'green' ? 'green' : 'white' });
             return;
@@ -1073,7 +1072,6 @@
         let note = document.getElementById('optNote').value.trim();
         let fullName = `${tempItem.name} (${curType})${note ? ': ' + note : ''}`;
         let items = tablesData[curTable]?.items || [];
-        // Đã bổ sung sent: false cho món mới
         items.unshift({fName: fullName, price: tempItem.price, qty: 1, done: false, sent: false, orderStaff: tempItem.staffName || "Admin"});
         db.ref('tables/'+curTable).update({ items: items, startTime: tablesData[curTable]?.startTime || new Date().toLocaleTimeString('vi-VN'), status: tablesData[curTable]?.status === 'green' ? 'green' : 'white' });
 
@@ -1100,7 +1098,7 @@
         if (lblTotalSum) lblTotalSum.innerText = totalFormatted;
     }
 
-    // 1. KHI BẤM XÁC NHẬN -> CHỈ IN CÁC MÓN MỚI PHÁT SINH (CHƯA IN)
+    // 1. KHI BẤM XÁC NHẬN -> BỔ SUNG TÊN NHÂN VIÊN ĐỂ MÁY IN IN RA
     function handleConfirm() { 
         if(!curTable) return; 
 
@@ -1122,6 +1120,13 @@
 
         db.ref('tables/'+curTable).update({status: 'red'}); 
 
+        // Lấy tên nhân viên đang thực hiện xác nhận
+        let staffName = "Admin";
+        const myDevId = localStorage.getItem('uc_dev_id');
+        if (myDevId && allDevicesData[myDevId] && allDevicesData[myDevId].name) {
+            staffName = allDevicesData[myDevId].name;
+        }
+
         // Gắn printedItem: false để app máy in nhận diện đúng đơn
         let preparedItems = newItems.map(it => ({
             ...it,
@@ -1133,7 +1138,9 @@
             table: curTable,
             items: preparedItems,
             timestamp: Date.now(),
-            printed: false
+            printed: false,
+            staffName: staffName,  // Bổ sung để máy in in ra tên nhân viên
+            staff: staffName       // Dự phòng tương thích các biến thể key
         };
         db.ref('orders').push(orderPayload);
 
@@ -1208,7 +1215,9 @@
                 items: tableInfo.items || [],
                 total: total,
                 timestamp: Date.now(),
-                printed: false
+                printed: false,
+                staffName: staffName,
+                staff: staffName
             };
             db.ref('orders').push(receiptPayload);
         }
@@ -1299,7 +1308,7 @@
                     price: item.price,
                     qty: newQty - oldQty,
                     done: false,
-                    sent: false, // Món tăng thêm là món mới chưa in
+                    sent: false,
                     note: addedNote,
                     orderStaff: item.orderStaff || "Admin"
                 };
