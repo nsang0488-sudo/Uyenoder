@@ -440,7 +440,7 @@
 <div id="teaAlertModal" class="modal-overlay" style="z-index: 2000000;">
     <div class="modal" style="text-align: center; border: 3px solid var(--danger); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
         <div style="font-size: 40px; margin-bottom: 10px;">🍵</div>
-        <h2 style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Đi châm trà đá đi em</h2>
+        <h2 id="teaAlertMessage" style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Các Em đi châm trà đá cho khách nhé</h2>
         <button onclick="closeModal('teaAlertModal')" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">DẠ</button>
     </div>
 </div>
@@ -585,14 +585,22 @@
     db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
 
-    let lastTeaAlertTimestamp = Date.now();
+    const currentSessionId = 'SESS_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    let lastSeenTeaAlertId = localStorage.getItem('uc_last_seen_tea_id') || "";
+
     const handleTeaAlertData = (data) => {
-        if (!data || !data.timestamp || data.timestamp <= lastTeaAlertTimestamp) return;
-        lastTeaAlertTimestamp = data.timestamp;
-        const myDevId = localStorage.getItem('uc_dev_id');
-        if (data.senderId && myDevId && data.senderId === myDevId) {
-            return;
-        }
+        if (!data || !data.id) return;
+        if (data.id === lastSeenTeaAlertId) return;
+        if (data.senderSessionId && data.senderSessionId === currentSessionId) return;
+        if (data.timestamp && (Date.now() - data.timestamp > 600000)) return;
+
+        lastSeenTeaAlertId = data.id;
+        localStorage.setItem('uc_last_seen_tea_id', data.id);
+
+        const msg = data.message || "Các Em đi châm trà đá cho khách nhé";
+        const msgEl = document.getElementById('teaAlertMessage');
+        if (msgEl) msgEl.innerText = msg;
+
         document.getElementById('teaAlertModal').style.display = 'flex';
     };
 
@@ -610,11 +618,18 @@
             return;
         }
         const myDevId = localStorage.getItem('uc_dev_id');
+        const alertId = 'TEA_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         const alertData = {
-            message: "Đi châm trà đá đi em",
+            id: alertId,
+            message: "Các Em đi châm trà đá cho khách nhé",
             timestamp: Date.now(),
-            senderId: myDevId || "MANAGER"
+            senderId: myDevId || "MANAGER",
+            senderSessionId: currentSessionId
         };
+
+        lastSeenTeaAlertId = alertId;
+        localStorage.setItem('uc_last_seen_tea_id', alertId);
+
         db.ref('tea_alert').set(alertData);
         db.ref('notifications/cham_tra').set(alertData);
         alert("Đã gửi thông báo châm trà đá đến các thiết bị!");
