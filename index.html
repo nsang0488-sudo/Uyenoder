@@ -440,8 +440,8 @@
 <div id="teaAlertModal" class="modal-overlay" style="z-index: 2000000;">
     <div class="modal" style="text-align: center; border: 3px solid var(--danger); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
         <div style="font-size: 40px; margin-bottom: 10px;">🍵</div>
-        <h2 style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Đi châm trà đá đi em</h2>
-        <button onclick="closeModal('teaAlertModal')" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">DẠ</button>
+        <h2 id="teaAlertText" style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Các Em đi châm trà chi khách nhé</h2>
+        <button onclick="dismissTeaAlert()" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">DẠ</button>
     </div>
 </div>
 
@@ -585,36 +585,84 @@
     db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
 
-    let lastTeaAlertTimestamp = Date.now();
-    const handleTeaAlertData = (data) => {
-        if (!data || !data.timestamp || data.timestamp <= lastTeaAlertTimestamp) return;
-        lastTeaAlertTimestamp = data.timestamp;
-        const myDevId = localStorage.getItem('uc_dev_id');
-        if (data.senderId && myDevId && data.senderId === myDevId) {
-            return;
+    let currentTeaAlertId = "";
+    let lastSentTeaAlertId = "";
+
+    function extractTeaAlert(val) {
+        if (!val) return null;
+        if (typeof val === 'object' && (val.id || val.timestamp)) return val;
+        if (typeof val === 'object') {
+            const keys = Object.keys(val);
+            if (keys.length > 0) {
+                const lastKey = keys[keys.length - 1];
+                return val[lastKey];
+            }
+        }
+        return null;
+    }
+
+    function handleTeaAlertData(rawVal) {
+        const data = extractTeaAlert(rawVal);
+        if (!data) return;
+
+        const alertId = data.id || (data.timestamp ? "TEA_" + data.timestamp : "");
+        if (!alertId) return;
+
+        if (alertId === lastSentTeaAlertId) return;
+
+        const lastSeenId = localStorage.getItem('uc_last_seen_tea_id') || "";
+        if (alertId === lastSeenId) return;
+
+        const alertTs = data.timestamp || 0;
+        if (alertTs > 0 && (Date.now() - alertTs > 30 * 60 * 1000)) return;
+
+        currentTeaAlertId = alertId;
+        const textEl = document.getElementById('teaAlertText');
+        if (textEl) {
+            textEl.innerText = data.message || "Các Em đi châm trà chi khách nhé";
         }
         document.getElementById('teaAlertModal').style.display = 'flex';
-    };
+    }
+
+    function dismissTeaAlert() {
+        if (currentTeaAlertId) {
+            localStorage.setItem('uc_last_seen_tea_id', currentTeaAlertId);
+        }
+        closeModal('teaAlertModal');
+    }
 
     db.ref('tea_alert').on('value', snapshot => {
         handleTeaAlertData(snapshot.val());
     });
+
     db.ref('notifications/cham_tra').on('value', snapshot => {
         handleTeaAlertData(snapshot.val());
     });
 
     function triggerTeaAlert() {
-        const role = getUserRole();
+        let role = getUserRole();
         if (role !== 'Quản lý') {
-            alert("Chức năng này chỉ dành cho tài khoản Quản lý!");
-            return;
+            const pass = prompt("Nhập mật khẩu quản lý:");
+            if (pass === "1905") {
+                isAdmin = true;
+                role = "Quản lý";
+            } else {
+                if (pass !== null) alert("Sai mật khẩu quản lý!");
+                return;
+            }
         }
-        const myDevId = localStorage.getItem('uc_dev_id');
+        const myDevId = localStorage.getItem('uc_dev_id') || "MANAGER";
+        const now = Date.now();
+        const alertId = "TEA_" + now + "_" + Math.floor(Math.random() * 10000);
+        lastSentTeaAlertId = alertId;
+
         const alertData = {
-            message: "Đi châm trà đá đi em",
-            timestamp: Date.now(),
-            senderId: myDevId || "MANAGER"
+            id: alertId,
+            message: "Các Em đi châm trà chi khách nhé",
+            timestamp: now,
+            senderId: myDevId
         };
+
         db.ref('tea_alert').set(alertData);
         db.ref('notifications/cham_tra').set(alertData);
         alert("Đã gửi thông báo châm trà đá đến các thiết bị!");
