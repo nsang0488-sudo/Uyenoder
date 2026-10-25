@@ -164,6 +164,7 @@
 <div class="navbar">
     <div style="font-weight: 900; color: var(--primary); font-size: 18px; letter-spacing: 1px;">UYÊN COFFEE</div>
     <div style="display:flex; gap:8px;">
+        <button class="nav-item" onclick="triggerTeaAlert()">🍵 CHÂM TRÀ</button>
         <button class="nav-item" onclick="showTab('tasks')">📋 VIỆC</button>
         <button class="nav-item" onclick="accessAdmin()">⚙️ QUẢN LÝ</button>
     </div>
@@ -341,8 +342,13 @@
         </div>
 
         <div class="admin-section">
-            <h3 style="margin-top:0;">🖼️ Cài Đặt QR</h3>
-            <input type="text" id="qrUrlInput" placeholder="Link ảnh QR..." style="width:100%;padding:14px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            <h3 style="margin-top:0;">🖼️ Cài Đặt QR (3 Tài Khoản)</h3>
+            <label style="font-size:12px; font-weight:bold; color:var(--dark);">Tài khoản 1 (TK 1):</label>
+            <input type="text" id="qrUrlInput" placeholder="Link ảnh QR TK 1..." style="width:100%;padding:12px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            <label style="font-size:12px; font-weight:bold; color:var(--dark);">Tài khoản 2 (TK 2):</label>
+            <input type="text" id="qrUrlInput2" placeholder="Link ảnh QR TK 2..." style="width:100%;padding:12px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            <label style="font-size:12px; font-weight:bold; color:var(--dark);">Tài khoản 3 (TK 3):</label>
+            <input type="text" id="qrUrlInput3" placeholder="Link ảnh QR TK 3..." style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
             <button onclick="saveQR()" style="width:100%;padding:14px;background:var(--dark);color:white;border:none;border-radius:10px; font-weight: bold;">LƯU QR</button>
         </div>
     </div>
@@ -387,6 +393,11 @@
             <div style="margin:20px 0; font-size:20px; text-align: center;">Thối: <b id="cashChange" style="color:var(--success)">0đ</b></div>
         </div>
         <div id="transferSection" style="display:none; text-align:center;">
+            <div style="display:flex; justify-content:center; gap:8px; margin-bottom:10px;">
+                <button id="qrAccBtn1" class="opt-btn active" onclick="selectQRAccount(1)" style="flex:1; padding:8px; font-size:12px;">TK 1</button>
+                <button id="qrAccBtn2" class="opt-btn" onclick="selectQRAccount(2)" style="flex:1; padding:8px; font-size:12px;">TK 2</button>
+                <button id="qrAccBtn3" class="opt-btn" onclick="selectQRAccount(3)" style="flex:1; padding:8px; font-size:12px;">TK 3</button>
+            </div>
             <img id="qrDisplay" class="qr-image-display" src="">
         </div>
         <button onclick="handlePay(false)" style="width:100%; background:var(--dark); color:white; padding:14px; border:none; border-radius:12px; font-weight:bold; font-size: 14px; margin-bottom: 8px;">KHÔNG IN HĐ</button>
@@ -423,6 +434,14 @@
             <button onclick="setServeStatus(false)" style="background:white; color:black; border:2px solid #ddd; padding:16px; border-radius:10px; font-weight:bold; cursor:pointer;">TRỐNG</button>
         </div>
         <p onclick="closeModal('serveModal')" style="margin-top:20px; color:gray; cursor:pointer; font-weight:bold;">Hủy</p>
+    </div>
+</div>
+
+<div id="teaAlertModal" class="modal-overlay" style="z-index: 2000000;">
+    <div class="modal" style="text-align: center; border: 3px solid var(--danger); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+        <div style="font-size: 40px; margin-bottom: 10px;">🍵</div>
+        <h2 style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Đi châm trà cho khách đi em</h2>
+        <button onclick="closeModal('teaAlertModal')" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">ĐÃ HIỂU</button>
     </div>
 </div>
 
@@ -565,6 +584,27 @@
 
     db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
+
+    let lastTeaAlertTimestamp = Date.now();
+    db.ref('tea_alert').on('value', snapshot => {
+        const data = snapshot.val();
+        if (data && data.timestamp && data.timestamp > lastTeaAlertTimestamp) {
+            lastTeaAlertTimestamp = data.timestamp;
+            document.getElementById('teaAlertModal').style.display = 'flex';
+        }
+    });
+
+    function triggerTeaAlert() {
+        const role = getUserRole();
+        if (role !== 'Quản lý') {
+            alert("Chức năng này chỉ dành cho tài khoản Quản lý!");
+            return;
+        }
+        db.ref('tea_alert').set({
+            message: "Đi châm trà cho khách đi em",
+            timestamp: Date.now()
+        });
+    }
     db.ref('active_shift').on('value', s => { currentShift = s.val(); updateShiftUI(); renderActiveBills(); });
     db.ref('edit_logs').on('value', s => { renderEditHistory(); });
 
@@ -649,15 +689,51 @@
             alert("Lỗi khi xóa hóa đơn: " + err.message);
         });
     }
-    db.ref('settings/qrUrl').on('value', s => {
-        qrUrl = s.val() || "";
-        let displayUrl = qrUrl;
-        if(qrUrl.includes('drive.google.com')){
-            let fileId = qrUrl.split('/d/')[1]?.split('/')[0];
-            if(fileId) displayUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w500`;
+    let qrUrl1 = "", qrUrl2 = "", qrUrl3 = "", selectedQRAcc = 1;
+
+    function formatQRDisplayUrl(url) {
+        if (!url) return "";
+        if (url.includes('drive.google.com')) {
+            let fileId = url.split('/d/')[1]?.split('/')[0];
+            if (fileId) return `https://drive.google.com/thumbnail?id=${fileId}&sz=w500`;
         }
-        document.getElementById('qrDisplay').src = displayUrl;
-        document.getElementById('qrUrlInput').value = qrUrl;
+        return url;
+    }
+
+    function updateQRDisplay() {
+        let currentUrl = selectedQRAcc === 1 ? qrUrl1 : (selectedQRAcc === 2 ? qrUrl2 : qrUrl3);
+        let displayUrl = formatQRDisplayUrl(currentUrl);
+        const imgEl = document.getElementById('qrDisplay');
+        if (imgEl) {
+            imgEl.src = displayUrl;
+            imgEl.style.display = (payMethod === 'transfer' && displayUrl) ? 'block' : 'none';
+        }
+    }
+
+    function selectQRAccount(accNum) {
+        selectedQRAcc = accNum;
+        [1, 2, 3].forEach(n => {
+            const btn = document.getElementById('qrAccBtn' + n);
+            if (btn) btn.className = n === accNum ? 'opt-btn active' : 'opt-btn';
+        });
+        updateQRDisplay();
+    }
+
+    db.ref('settings/qrUrl').on('value', s => {
+        qrUrl1 = s.val() || "";
+        qrUrl = qrUrl1;
+        document.getElementById('qrUrlInput').value = qrUrl1;
+        updateQRDisplay();
+    });
+    db.ref('settings/qrUrl2').on('value', s => {
+        qrUrl2 = s.val() || "";
+        document.getElementById('qrUrlInput2').value = qrUrl2;
+        updateQRDisplay();
+    });
+    db.ref('settings/qrUrl3').on('value', s => {
+        qrUrl3 = s.val() || "";
+        document.getElementById('qrUrlInput3').value = qrUrl3;
+        updateQRDisplay();
     });
 
     let shiftLogsListenerAttached = false;
@@ -862,7 +938,17 @@
 
     let currentTableSubTab = 'tables';
 
+    function hasUnconfirmedItems() {
+        if (!curTable || !tablesData[curTable]) return false;
+        let items = tablesData[curTable].items || [];
+        return items.some(it => !it.sent);
+    }
+
     function switchTableSubTab(sub) {
+        if (curTable && hasUnconfirmedItems()) {
+            alert("Vui lòng bấm XÁC NHẬN đơn hàng trước khi chuyển tab!");
+            return;
+        }
         currentTableSubTab = sub;
         const btnTables = document.getElementById('subtab-btn-tables');
         const btnBills = document.getElementById('subtab-btn-bills');
@@ -881,11 +967,16 @@
         renderTables();
     }
 
-    function closeTableOrderView() {
+    function closeTableOrderView(force = false) {
+        if (!force && curTable && hasUnconfirmedItems()) {
+            alert("Vui lòng bấm XÁC NHẬN đơn hàng trước khi thoát ra khỏi bàn!");
+            return false;
+        }
         document.getElementById('table-order-view').style.display = 'none';
         document.getElementById('list-tables').style.display = 'grid';
         document.getElementById('table-subtabs').style.display = 'flex';
         curTable = null;
+        return true;
     }
 
     function renderTables() {
@@ -933,6 +1024,10 @@
     let currentOrderSubView = 'menu';
 
     function selectTable(i) {
+        if (curTable && curTable !== i && hasUnconfirmedItems()) {
+            alert("Vui lòng bấm XÁC NHẬN đơn hàng trước khi chọn bàn khác!");
+            return;
+        }
         curTable = i;
         document.getElementById('orderHeaderTitle').innerText = "BÀN " + i + " - MENU";
         document.getElementById('list-tables').style.display = 'none';
@@ -1155,11 +1250,27 @@
         });
     }
 
-    function setStatus(s) { if(!curTable) return; let items = tablesData[curTable].items || []; items.forEach(it => it.done = true); db.ref('tables/'+curTable).update({items: items, status: s}); closeTableOrderView(); renderTables(); }
+    function setStatus(s) {
+        if(!curTable) return;
+        if(hasUnconfirmedItems()) {
+            alert("Vui lòng bấm XÁC NHẬN đơn hàng trước khi bấm XONG HẾT!");
+            return;
+        }
+        let items = tablesData[curTable].items || [];
+        items.forEach(it => it.done = true);
+        db.ref('tables/'+curTable).update({items: items, status: s});
+        closeTableOrderView(true);
+        renderTables();
+    }
 
     function openPayModal() {
         if(!curTable || !tablesData[curTable]) return;
         if(!checkShiftRequired()) return;
+
+        if(hasUnconfirmedItems()) {
+            alert("Vui lòng bấm XÁC NHẬN đơn hàng trước khi thanh toán!");
+            return;
+        }
 
         const role = getUserRole();
         if (role === 'Phục vụ') {
@@ -1413,40 +1524,50 @@
     function handleMoveOrMergeTable() {
         let targetTable = parseInt(document.getElementById('selectToTable').value);
         let sourceTable = curTable;
+        if (!sourceTable || !targetTable) return;
+
+        let sourceData = tablesData[sourceTable] || {};
+        let targetData = tablesData[targetTable] || {};
 
         if (currentMoveMode === 'move') {
-            db.ref('tables/' + targetTable).set(tablesData[sourceTable]).then(() => {
+            db.ref('tables/' + targetTable).set(sourceData).then(() => {
                 db.ref('tables/' + sourceTable).remove();
-                curTable = targetTable;
-                document.getElementById('lblTable').innerText = "BÀN " + curTable;
                 closeModal('moveTableModal');
+                closeTableOrderView(true);
                 renderTables();
-                renderBill();
             });
         } else {
-            let sourceItems = tablesData[sourceTable]?.items || [];
-            let targetItems = tablesData[targetTable]?.items || [];
+            let sourceItems = sourceData.items || [];
+            let targetItems = targetData.items || [];
 
             let mergedItems = targetItems.concat(sourceItems);
-            let startTime = tablesData[targetTable]?.startTime || tablesData[sourceTable]?.startTime || new Date().toISOString();
-            let status = (tablesData[targetTable]?.status === 'red' || tablesData[sourceTable]?.status === 'red') ? 'red' : (tablesData[targetTable]?.status || tablesData[sourceTable]?.status || 'white');
+            let startTime = targetData.startTime || sourceData.startTime || new Date().toISOString();
+            let status = (targetData.status === 'red' || sourceData.status === 'red') ? 'red' : (targetData.status || sourceData.status || 'white');
+            let needsServing = targetData.needsServing || sourceData.needsServing || false;
 
             db.ref('tables/' + targetTable).set({
                 items: mergedItems,
                 startTime: startTime,
-                status: status
+                status: status,
+                needsServing: needsServing
             }).then(() => {
                 db.ref('tables/' + sourceTable).remove();
-                curTable = targetTable;
-                document.getElementById('lblTable').innerText = "BÀN " + curTable;
                 closeModal('moveTableModal');
+                closeTableOrderView(true);
                 renderTables();
-                renderBill();
             });
         }
     }
 
-    function setPayMethod(m) { payMethod = m; document.getElementById('payCashBtn').className = m==='cash'?'opt-btn active':'opt-btn'; document.getElementById('payTransferBtn').className = m==='transfer'?'opt-btn active':'opt-btn'; document.getElementById('cashSection').style.display = m==='cash'?'block':'none'; document.getElementById('transferSection').style.display = m==='transfer'?'block':'none'; document.getElementById('qrDisplay').style.display = (m==='transfer' && qrUrl)?'block':'none'; }
+    function setPayMethod(m) {
+        payMethod = m;
+        document.getElementById('payCashBtn').className = m==='cash'?'opt-btn active':'opt-btn';
+        document.getElementById('payTransferBtn').className = m==='transfer'?'opt-btn active':'opt-btn';
+        document.getElementById('cashSection').style.display = m==='cash'?'block':'none';
+        document.getElementById('transferSection').style.display = m==='transfer'?'block':'none';
+        if (m === 'transfer') selectQRAccount(1);
+        else updateQRDisplay();
+    }
     function updateShiftUI() {
         const s = document.getElementById('shiftSummary');
         if(currentShift) {
@@ -1472,9 +1593,22 @@
         } else { s.innerText = "Chưa mở ca"; document.getElementById('btnOpen').style.display='block'; document.getElementById('btnClose').style.display='none'; }
     }
 
-    function saveQR() { db.ref('settings/qrUrl').set(document.getElementById('qrUrlInput').value).then(() => alert("Đã lưu!")); }
+    function saveQR() {
+        let u1 = document.getElementById('qrUrlInput').value.trim();
+        let u2 = document.getElementById('qrUrlInput2').value.trim();
+        let u3 = document.getElementById('qrUrlInput3').value.trim();
+        db.ref('settings').update({
+            qrUrl: u1,
+            qrUrl2: u2,
+            qrUrl3: u3
+        }).then(() => alert("Đã lưu thông tin QR cả 3 tài khoản!"));
+    }
 
     function showTab(id) {
+        if (curTable && hasUnconfirmedItems()) {
+            alert("Vui lòng bấm XÁC NHẬN đơn hàng trước khi chuyển trang!");
+            return;
+        }
         currentTab = id;
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active'));
@@ -1483,7 +1617,7 @@
         if(document.getElementById('btn-tab-'+id)) document.getElementById('btn-tab-'+id).classList.add('active');
 
         if(id === 'tables') {
-            closeTableOrderView();
+            closeTableOrderView(true);
             renderTables();
         } else if(id === 'pos') {
             showTab('tables');
