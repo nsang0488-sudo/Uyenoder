@@ -440,8 +440,8 @@
 <div id="teaAlertModal" class="modal-overlay" style="z-index: 2000000;">
     <div class="modal" style="text-align: center; border: 3px solid var(--danger); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
         <div style="font-size: 40px; margin-bottom: 10px;">🍵</div>
-        <h2 style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Đi châm trà cho khách đi em</h2>
-        <button onclick="closeModal('teaAlertModal')" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">ĐÃ HIỂU</button>
+        <h2 style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Đi châm trà đá đi em</h2>
+        <button onclick="closeModal('teaAlertModal')" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">DẠ</button>
     </div>
 </div>
 
@@ -586,12 +586,21 @@
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
 
     let lastTeaAlertTimestamp = Date.now();
-    db.ref('tea_alert').on('value', snapshot => {
-        const data = snapshot.val();
-        if (data && data.timestamp && data.timestamp > lastTeaAlertTimestamp) {
-            lastTeaAlertTimestamp = data.timestamp;
-            document.getElementById('teaAlertModal').style.display = 'flex';
+    const handleTeaAlertData = (data) => {
+        if (!data || !data.timestamp || data.timestamp <= lastTeaAlertTimestamp) return;
+        lastTeaAlertTimestamp = data.timestamp;
+        const myDevId = localStorage.getItem('uc_dev_id');
+        if (data.senderId && myDevId && data.senderId === myDevId) {
+            return;
         }
+        document.getElementById('teaAlertModal').style.display = 'flex';
+    };
+
+    db.ref('tea_alert').on('value', snapshot => {
+        handleTeaAlertData(snapshot.val());
+    });
+    db.ref('notifications/cham_tra').on('value', snapshot => {
+        handleTeaAlertData(snapshot.val());
     });
 
     function triggerTeaAlert() {
@@ -600,10 +609,15 @@
             alert("Chức năng này chỉ dành cho tài khoản Quản lý!");
             return;
         }
-        db.ref('tea_alert').set({
-            message: "Đi châm trà cho khách đi em",
-            timestamp: Date.now()
-        });
+        const myDevId = localStorage.getItem('uc_dev_id');
+        const alertData = {
+            message: "Đi châm trà đá đi em",
+            timestamp: Date.now(),
+            senderId: myDevId || "MANAGER"
+        };
+        db.ref('tea_alert').set(alertData);
+        db.ref('notifications/cham_tra').set(alertData);
+        alert("Đã gửi thông báo châm trà đá đến các thiết bị!");
     }
     db.ref('active_shift').on('value', s => { currentShift = s.val(); updateShiftUI(); renderActiveBills(); });
     db.ref('edit_logs').on('value', s => { renderEditHistory(); });
@@ -694,7 +708,12 @@
     function formatQRDisplayUrl(url) {
         if (!url) return "";
         if (url.includes('drive.google.com')) {
-            let fileId = url.split('/d/')[1]?.split('/')[0];
+            let fileId = "";
+            if (url.includes('/d/')) {
+                fileId = url.split('/d/')[1]?.split('/')[0]?.split('?')[0];
+            } else if (url.includes('id=')) {
+                fileId = url.split('id=')[1]?.split('&')[0];
+            }
             if (fileId) return `https://drive.google.com/thumbnail?id=${fileId}&sz=w500`;
         }
         return url;
@@ -719,20 +738,23 @@
         updateQRDisplay();
     }
 
-    db.ref('settings/qrUrl').on('value', s => {
-        qrUrl1 = s.val() || "";
+    db.ref('settings').on('value', s => {
+        const settings = s.val() || {};
+        const qrUrls = settings.qrUrls || {};
+
+        qrUrl1 = qrUrls.tk1 || settings.qrUrl || "";
+        qrUrl2 = qrUrls.tk2 || settings.qrUrl2 || "";
+        qrUrl3 = qrUrls.tk3 || settings.qrUrl3 || "";
         qrUrl = qrUrl1;
-        document.getElementById('qrUrlInput').value = qrUrl1;
-        updateQRDisplay();
-    });
-    db.ref('settings/qrUrl2').on('value', s => {
-        qrUrl2 = s.val() || "";
-        document.getElementById('qrUrlInput2').value = qrUrl2;
-        updateQRDisplay();
-    });
-    db.ref('settings/qrUrl3').on('value', s => {
-        qrUrl3 = s.val() || "";
-        document.getElementById('qrUrlInput3').value = qrUrl3;
+
+        const input1 = document.getElementById('qrUrlInput');
+        const input2 = document.getElementById('qrUrlInput2');
+        const input3 = document.getElementById('qrUrlInput3');
+
+        if (input1) input1.value = qrUrl1;
+        if (input2) input2.value = qrUrl2;
+        if (input3) input3.value = qrUrl3;
+
         updateQRDisplay();
     });
 
@@ -1600,7 +1622,12 @@
         db.ref('settings').update({
             qrUrl: u1,
             qrUrl2: u2,
-            qrUrl3: u3
+            qrUrl3: u3,
+            qrUrls: {
+                tk1: u1,
+                tk2: u2,
+                tk3: u3
+            }
         }).then(() => alert("Đã lưu thông tin QR cả 3 tài khoản!"));
     }
 
