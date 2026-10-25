@@ -610,9 +610,6 @@
 
         if (alertId === lastSentTeaAlertId) return;
 
-        const myDevId = localStorage.getItem('uc_dev_id');
-        if (data.senderId && myDevId && data.senderId === myDevId) return;
-
         const lastSeenId = localStorage.getItem('uc_last_seen_tea_id') || "";
         if (alertId === lastSeenId) return;
 
@@ -666,14 +663,9 @@
             senderId: myDevId
         };
 
-        Promise.all([
-            db.ref('tea_alert').set(alertData),
-            db.ref('notifications/cham_tra').set(alertData)
-        ]).then(() => {
-            alert("Đã gửi thông báo châm trà đá đến các thiết bị!");
-        }).catch(err => {
-            alert("Lỗi khi gửi thông báo: " + (err ? err.message : err));
-        });
+        db.ref('tea_alert').set(alertData);
+        db.ref('notifications/cham_tra').set(alertData);
+        alert("Đã gửi thông báo châm trà đá đến các thiết bị!");
     }
     db.ref('active_shift').on('value', s => { currentShift = s.val(); updateShiftUI(); renderActiveBills(); });
     db.ref('edit_logs').on('value', s => { renderEditHistory(); });
