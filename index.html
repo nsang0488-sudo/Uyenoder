@@ -164,6 +164,7 @@
 <div class="navbar">
     <div style="font-weight: 900; color: var(--primary); font-size: 18px; letter-spacing: 1px;">UYÊN COFFEE</div>
     <div style="display:flex; gap:8px;">
+        <button class="nav-item" onclick="triggerChamTra()" style="background: #e67e22; color: white;">🍵 CHÂM TRÀ</button>
         <button class="nav-item" onclick="showTab('tasks')">📋 VIỆC</button>
         <button class="nav-item" onclick="accessAdmin()">⚙️ QUẢN LÝ</button>
     </div>
@@ -341,9 +342,11 @@
         </div>
 
         <div class="admin-section">
-            <h3 style="margin-top:0;">🖼️ Cài Đặt QR</h3>
-            <input type="text" id="qrUrlInput" placeholder="Link ảnh QR..." style="width:100%;padding:14px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
-            <button onclick="saveQR()" style="width:100%;padding:14px;background:var(--dark);color:white;border:none;border-radius:10px; font-weight: bold;">LƯU QR</button>
+            <h3 style="margin-top:0;">🖼️ Cài Đặt QR Thanh Toán (3 Tài Khoản)</h3>
+            <input type="text" id="qrUrlInput1" placeholder="Link ảnh QR TK 1..." style="width:100%;padding:12px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            <input type="text" id="qrUrlInput2" placeholder="Link ảnh QR TK 2..." style="width:100%;padding:12px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            <input type="text" id="qrUrlInput3" placeholder="Link ảnh QR TK 3..." style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            <button onclick="saveQR()" style="width:100%;padding:14px;background:var(--dark);color:white;border:none;border-radius:10px; font-weight: bold;">LƯU CẢ 3 QR</button>
         </div>
     </div>
 </div>
@@ -387,6 +390,11 @@
             <div style="margin:20px 0; font-size:20px; text-align: center;">Thối: <b id="cashChange" style="color:var(--success)">0đ</b></div>
         </div>
         <div id="transferSection" style="display:none; text-align:center;">
+            <div style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;">
+                <button id="qrAccBtn1" class="opt-btn active" onclick="selectQRAccount(1)">TK 1</button>
+                <button id="qrAccBtn2" class="opt-btn" onclick="selectQRAccount(2)">TK 2</button>
+                <button id="qrAccBtn3" class="opt-btn" onclick="selectQRAccount(3)">TK 3</button>
+            </div>
             <img id="qrDisplay" class="qr-image-display" src="">
         </div>
         <button onclick="handlePay(false)" style="width:100%; background:var(--dark); color:white; padding:14px; border:none; border-radius:12px; font-weight:bold; font-size: 14px; margin-bottom: 8px;">KHÔNG IN HĐ</button>
@@ -423,6 +431,16 @@
             <button onclick="setServeStatus(false)" style="background:white; color:black; border:2px solid #ddd; padding:16px; border-radius:10px; font-weight:bold; cursor:pointer;">TRỐNG</button>
         </div>
         <p onclick="closeModal('serveModal')" style="margin-top:20px; color:gray; cursor:pointer; font-weight:bold;">Hủy</p>
+    </div>
+</div>
+
+<div id="chamTraModal" class="modal-overlay" style="z-index: 9999999;">
+    <div class="modal" style="text-align:center; padding: 30px 20px; border: 3px solid #e67e22; border-radius: 16px; background: #fff;">
+        <div style="font-size: 50px; margin-bottom: 10px;">🍵</div>
+        <h2 style="color: #d35400; margin: 0 0 15px 0; font-size: 22px; font-weight: 900; line-height: 1.4;">
+            Đi châm trà cho khách đi em
+        </h2>
+        <button onclick="closeModal('chamTraModal')" style="width: 100%; background: #e67e22; color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px; margin-top: 10px; cursor: pointer;">ĐÃ HIỂU / ĐÓNG</button>
     </div>
 </div>
 
@@ -649,16 +667,57 @@
             alert("Lỗi khi xóa hóa đơn: " + err.message);
         });
     }
-    db.ref('settings/qrUrl').on('value', s => {
-        qrUrl = s.val() || "";
-        let displayUrl = qrUrl;
-        if(qrUrl.includes('drive.google.com')){
-            let fileId = qrUrl.split('/d/')[1]?.split('/')[0];
-            if(fileId) displayUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w500`;
+    let qrUrls = { tk1: "", tk2: "", tk3: "" };
+    let currentSelectedQRAcc = 1;
+
+    function formatQRDisplayUrl(url) {
+        if (!url) return "";
+        let displayUrl = url;
+        if (url.includes('drive.google.com')) {
+            let fileId = url.split('/d/')[1]?.split('/')[0];
+            if (fileId) displayUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w500`;
         }
-        document.getElementById('qrDisplay').src = displayUrl;
-        document.getElementById('qrUrlInput').value = qrUrl;
+        return displayUrl;
+    }
+
+    db.ref('settings/qrUrls').on('value', s => {
+        let val = s.val() || {};
+        qrUrls.tk1 = val.tk1 || "";
+        qrUrls.tk2 = val.tk2 || "";
+        qrUrls.tk3 = val.tk3 || "";
+
+        if (document.getElementById('qrUrlInput1')) document.getElementById('qrUrlInput1').value = qrUrls.tk1;
+        if (document.getElementById('qrUrlInput2')) document.getElementById('qrUrlInput2').value = qrUrls.tk2;
+        if (document.getElementById('qrUrlInput3')) document.getElementById('qrUrlInput3').value = qrUrls.tk3;
+
+        selectQRAccount(currentSelectedQRAcc);
     });
+
+    // Tương thích ngược dữ liệu cũ nếu qrUrls chưa có
+    db.ref('settings/qrUrl').on('value', s => {
+        let oldUrl = s.val();
+        if (oldUrl && !qrUrls.tk1) {
+            qrUrls.tk1 = oldUrl;
+            if (document.getElementById('qrUrlInput1')) document.getElementById('qrUrlInput1').value = oldUrl;
+            selectQRAccount(1);
+        }
+    });
+
+    function selectQRAccount(accNum) {
+        currentSelectedQRAcc = accNum;
+        [1, 2, 3].forEach(num => {
+            const btn = document.getElementById('qrAccBtn' + num);
+            if (btn) btn.className = (num === accNum) ? 'opt-btn active' : 'opt-btn';
+        });
+
+        let targetUrl = qrUrls['tk' + accNum] || "";
+        let displayUrl = formatQRDisplayUrl(targetUrl);
+        const qrImg = document.getElementById('qrDisplay');
+        if (qrImg) {
+            qrImg.src = displayUrl;
+            qrImg.style.display = (payMethod === 'transfer' && displayUrl) ? 'block' : 'none';
+        }
+    }
 
     let shiftLogsListenerAttached = false;
     function loadShiftLogsData() {
@@ -881,11 +940,22 @@
         renderTables();
     }
 
-    function closeTableOrderView() {
+    function hasUnconfirmedItems(tableId) {
+        if (!tableId || !tablesData[tableId]) return false;
+        let items = tablesData[tableId].items || [];
+        return items.some(it => it.sent === false);
+    }
+
+    function closeTableOrderView(force = false) {
+        if (!force && curTable && hasUnconfirmedItems(curTable)) {
+            alert("Vui lòng bấm XÁC NHẬN đơn hàng trước khi thoát khỏi bàn!");
+            return false;
+        }
         document.getElementById('table-order-view').style.display = 'none';
         document.getElementById('list-tables').style.display = 'grid';
         document.getElementById('table-subtabs').style.display = 'flex';
         curTable = null;
+        return true;
     }
 
     function renderTables() {
@@ -1155,11 +1225,26 @@
         });
     }
 
-    function setStatus(s) { if(!curTable) return; let items = tablesData[curTable].items || []; items.forEach(it => it.done = true); db.ref('tables/'+curTable).update({items: items, status: s}); closeTableOrderView(); renderTables(); }
+    function setStatus(s) {
+        if(!curTable) return;
+        if (hasUnconfirmedItems(curTable)) {
+            alert("Vui lòng bấm XÁC NHẬN đơn hàng trước khi hoàn thành bàn!");
+            return;
+        }
+        let items = tablesData[curTable].items || [];
+        items.forEach(it => it.done = true);
+        db.ref('tables/'+curTable).update({items: items, status: s});
+        closeTableOrderView(true);
+        renderTables();
+    }
 
     function openPayModal() {
         if(!curTable || !tablesData[curTable]) return;
         if(!checkShiftRequired()) return;
+        if (hasUnconfirmedItems(curTable)) {
+            alert("Vui lòng bấm XÁC NHẬN đơn hàng trước khi thanh toán!");
+            return;
+        }
 
         const role = getUserRole();
         if (role === 'Phục vụ') {
@@ -1414,39 +1499,46 @@
         let targetTable = parseInt(document.getElementById('selectToTable').value);
         let sourceTable = curTable;
 
+        if (!sourceTable || !targetTable) return;
+
         if (currentMoveMode === 'move') {
             db.ref('tables/' + targetTable).set(tablesData[sourceTable]).then(() => {
                 db.ref('tables/' + sourceTable).remove();
-                curTable = targetTable;
-                document.getElementById('lblTable').innerText = "BÀN " + curTable;
                 closeModal('moveTableModal');
+                closeTableOrderView(true);
                 renderTables();
-                renderBill();
             });
         } else {
             let sourceItems = tablesData[sourceTable]?.items || [];
             let targetItems = tablesData[targetTable]?.items || [];
 
             let mergedItems = targetItems.concat(sourceItems);
-            let startTime = tablesData[targetTable]?.startTime || tablesData[sourceTable]?.startTime || new Date().toISOString();
+            let startTime = tablesData[targetTable]?.startTime || tablesData[sourceTable]?.startTime || new Date().toLocaleTimeString('vi-VN');
             let status = (tablesData[targetTable]?.status === 'red' || tablesData[sourceTable]?.status === 'red') ? 'red' : (tablesData[targetTable]?.status || tablesData[sourceTable]?.status || 'white');
+            let needsServing = tablesData[targetTable]?.needsServing || tablesData[sourceTable]?.needsServing || false;
 
             db.ref('tables/' + targetTable).set({
                 items: mergedItems,
                 startTime: startTime,
-                status: status
+                status: status,
+                needsServing: needsServing
             }).then(() => {
                 db.ref('tables/' + sourceTable).remove();
-                curTable = targetTable;
-                document.getElementById('lblTable').innerText = "BÀN " + curTable;
                 closeModal('moveTableModal');
+                closeTableOrderView(true);
                 renderTables();
-                renderBill();
             });
         }
     }
 
-    function setPayMethod(m) { payMethod = m; document.getElementById('payCashBtn').className = m==='cash'?'opt-btn active':'opt-btn'; document.getElementById('payTransferBtn').className = m==='transfer'?'opt-btn active':'opt-btn'; document.getElementById('cashSection').style.display = m==='cash'?'block':'none'; document.getElementById('transferSection').style.display = m==='transfer'?'block':'none'; document.getElementById('qrDisplay').style.display = (m==='transfer' && qrUrl)?'block':'none'; }
+    function setPayMethod(m) {
+        payMethod = m;
+        document.getElementById('payCashBtn').className = m==='cash'?'opt-btn active':'opt-btn';
+        document.getElementById('payTransferBtn').className = m==='transfer'?'opt-btn active':'opt-btn';
+        document.getElementById('cashSection').style.display = m==='cash'?'block':'none';
+        document.getElementById('transferSection').style.display = m==='transfer'?'block':'none';
+        selectQRAccount(currentSelectedQRAcc);
+    }
     function updateShiftUI() {
         const s = document.getElementById('shiftSummary');
         if(currentShift) {
@@ -1472,9 +1564,22 @@
         } else { s.innerText = "Chưa mở ca"; document.getElementById('btnOpen').style.display='block'; document.getElementById('btnClose').style.display='none'; }
     }
 
-    function saveQR() { db.ref('settings/qrUrl').set(document.getElementById('qrUrlInput').value).then(() => alert("Đã lưu!")); }
+    function saveQR() {
+        let u1 = document.getElementById('qrUrlInput1').value.trim();
+        let u2 = document.getElementById('qrUrlInput2').value.trim();
+        let u3 = document.getElementById('qrUrlInput3').value.trim();
+        db.ref('settings/qrUrls').set({
+            tk1: u1,
+            tk2: u2,
+            tk3: u3
+        }).then(() => alert("Đã lưu cài đặt cả 3 QR thành công!"));
+    }
 
     function showTab(id) {
+        if (curTable && hasUnconfirmedItems(curTable)) {
+            alert("Vui lòng bấm XÁC NHẬN đơn hàng trước khi chuyển mục!");
+            return;
+        }
         currentTab = id;
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active'));
@@ -1483,7 +1588,7 @@
         if(document.getElementById('btn-tab-'+id)) document.getElementById('btn-tab-'+id).classList.add('active');
 
         if(id === 'tables') {
-            closeTableOrderView();
+            closeTableOrderView(true);
             renderTables();
         } else if(id === 'pos') {
             showTab('tables');
@@ -1825,6 +1930,45 @@
             closeModal('serveModal');
         });
     }
+
+    function triggerChamTra() {
+        const role = getUserRole();
+        let allowed = (role === 'Quản lý' || isAdmin);
+
+        if (!allowed) {
+            let pass = prompt("Chức năng chỉ dành cho Quản lý. Vui lòng nhập mật khẩu quản lý:");
+            if (pass === "1905") {
+                allowed = true;
+            } else if (pass !== null) {
+                alert("Mật khẩu quản lý không đúng!");
+                return;
+            } else {
+                return;
+            }
+        }
+
+        if (allowed) {
+            db.ref('notifications/cham_tra').set({
+                message: "Đi châm trà cho khách đi em",
+                timestamp: Date.now()
+            }).then(() => {
+                alert("Đã phát thông báo Châm trà thành công!");
+            });
+        }
+    }
+
+    let lastChamTraTime = 0;
+    db.ref('notifications/cham_tra').on('value', snapshot => {
+        const data = snapshot.val();
+        if (data && data.timestamp) {
+            if (lastChamTraTime === 0) {
+                lastChamTraTime = data.timestamp;
+            } else if (data.timestamp > lastChamTraTime) {
+                lastChamTraTime = data.timestamp;
+                document.getElementById('chamTraModal').style.display = 'flex';
+            }
+        }
+    });
 
     document.addEventListener("visibilitychange", function() {
         if (document.visibilityState === 'hidden') {
