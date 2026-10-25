@@ -441,7 +441,7 @@
     <div class="modal" style="text-align: center; border: 3px solid var(--danger); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
         <div style="font-size: 40px; margin-bottom: 10px;">🍵</div>
         <h2 id="teaAlertText" style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Các Em đi châm trà chi khách nhé</h2>
-        <button onclick="closeModal('teaAlertModal')" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">DẠ</button>
+        <button onclick="dismissTeaAlert()" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">DẠ</button>
     </div>
 </div>
 
@@ -585,47 +585,46 @@
     db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
 
-    let initialLoadTeaAlert = true;
-    let initialLoadChamTra = true;
-    let lastProcessedTeaTimestamp = 0;
+    let currentTeaAlertTimestamp = 0;
     let lastSentTeaAlertTimestamp = 0;
 
-    const handleTeaAlertData = (data, isInitial) => {
-        if (isInitial) return;
+    function handleTeaAlertData(data) {
         if (!data || !data.timestamp) return;
-        if (data.timestamp <= lastProcessedTeaTimestamp) return;
-        if (data.timestamp === lastSentTeaAlertTimestamp) return;
-        lastProcessedTeaTimestamp = data.timestamp;
+        const alertTs = data.timestamp;
+
+        if (alertTs === lastSentTeaAlertTimestamp) return;
 
         const myDevId = localStorage.getItem('uc_dev_id');
-        if (data.senderId && myDevId && data.senderId === myDevId) {
-            return;
-        }
+        if (data.senderId && myDevId && data.senderId === myDevId) return;
+
+        const lastSeenTs = parseInt(localStorage.getItem('uc_last_seen_tea_ts') || '0', 10);
+        if (alertTs <= lastSeenTs) return;
+
+        if (Date.now() - alertTs > 15 * 60 * 1000) return;
+
+        currentTeaAlertTimestamp = alertTs;
         const textEl = document.getElementById('teaAlertText');
         if (textEl) {
             textEl.innerText = data.message || "Các Em đi châm trà chi khách nhé";
         }
         document.getElementById('teaAlertModal').style.display = 'flex';
-    };
+    }
+
+    function dismissTeaAlert() {
+        if (currentTeaAlertTimestamp > 0) {
+            localStorage.setItem('uc_last_seen_tea_ts', currentTeaAlertTimestamp.toString());
+        } else {
+            localStorage.setItem('uc_last_seen_tea_ts', Date.now().toString());
+        }
+        closeModal('teaAlertModal');
+    }
 
     db.ref('tea_alert').on('value', snapshot => {
-        let isInit = initialLoadTeaAlert;
-        initialLoadTeaAlert = false;
-        const data = snapshot.val();
-        if (isInit && data && data.timestamp) {
-            lastProcessedTeaTimestamp = Math.max(lastProcessedTeaTimestamp, data.timestamp);
-        }
-        handleTeaAlertData(data, isInit);
+        handleTeaAlertData(snapshot.val());
     });
 
     db.ref('notifications/cham_tra').on('value', snapshot => {
-        let isInit = initialLoadChamTra;
-        initialLoadChamTra = false;
-        const data = snapshot.val();
-        if (isInit && data && data.timestamp) {
-            lastProcessedTeaTimestamp = Math.max(lastProcessedTeaTimestamp, data.timestamp);
-        }
-        handleTeaAlertData(data, isInit);
+        handleTeaAlertData(snapshot.val());
     });
 
     function triggerTeaAlert() {
