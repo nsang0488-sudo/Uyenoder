@@ -163,8 +163,11 @@
 
 <div class="navbar">
     <div style="font-weight: 900; color: var(--primary); font-size: 18px; letter-spacing: 1px;">UYÊN COFFEE</div>
-    <div style="display:flex; gap:8px;">
-        <button class="nav-item" onclick="triggerTeaAlert()">🍵 CHÂM TRÀ</button>
+    <div style="display:flex; gap:8px; align-items: center;">
+        <div id="connectionStatusIndicator" class="nav-item" style="background: #f1f3f5; color: #495057; display: flex; align-items: center; gap: 6px; cursor: default; border: 1px solid #ced4da; padding: 8px 12px;">
+            <span id="connDot" style="width: 9px; height: 9px; background: #ffc107; border-radius: 50%; display: inline-block;"></span>
+            <span id="connText" style="font-size: 11px; font-weight: bold;">Kết nối...</span>
+        </div>
         <button class="nav-item" onclick="showTab('tasks')">📋 VIỆC</button>
         <button class="nav-item" onclick="accessAdmin()">⚙️ QUẢN LÝ</button>
     </div>
@@ -437,14 +440,6 @@
     </div>
 </div>
 
-<div id="teaAlertModal" class="modal-overlay" style="z-index: 2000000;">
-    <div class="modal" style="text-align: center; border: 3px solid var(--danger); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-        <div style="font-size: 40px; margin-bottom: 10px;">🍵</div>
-        <h2 id="teaAlertMessage" style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Các Em đi châm trà đá cho khách nhé</h2>
-        <button onclick="closeModal('teaAlertModal')" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">DẠ</button>
-    </div>
-</div>
-
 <div class="mobile-bottom-nav">
     <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
     <div class="m-btn" id="btn-tab-store" onclick="showTab('store')">🏪 CỬA HÀNG</div>
@@ -462,6 +457,22 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // Theo dõi trạng thái kết nối mạng thời gian thực với Firebase
+    db.ref('.info/connected').on('value', function(snapshot) {
+        const dot = document.getElementById('connDot');
+        const text = document.getElementById('connText');
+        const indicator = document.getElementById('connectionStatusIndicator');
+        if (snapshot.val() === true) {
+            if (dot) { dot.style.background = '#28a745'; } // Xanh lá: Mạng tốt, kết nối ổn định
+            if (text) { text.innerText = 'Mạng Tốt'; text.style.color = '#28a745'; }
+            if (indicator) { indicator.style.borderColor = '#28a745'; indicator.style.background = '#e8f5e9'; }
+        } else {
+            if (dot) { dot.style.background = '#dc3545'; } // Đỏ: Mất mạng hoặc chập chờn
+            if (text) { text.innerText = 'Mất Mạng / Yếu'; text.style.color = '#dc3545'; }
+            if (indicator) { indicator.style.borderColor = '#dc3545'; indicator.style.background = '#f8d7da'; }
+        }
+    });
 
     let currentTab = 'tables';
     let curTable = null, menuData = {}, tablesData = {}, currentShift = null, curType = 'Đá', tempItem = null, editIdx = null, payMethod = 'cash', qrUrl = "";
@@ -585,53 +596,6 @@
     db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
 
-    const currentSessionId = 'SESS_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    let lastSeenTeaAlertId = "";
-
-    const handleTeaAlertData = (data) => {
-        if (!data || !data.id) return;
-        if (data.id === lastSeenTeaAlertId) return;
-        if (data.senderSessionId && data.senderSessionId === currentSessionId) return;
-        if (data.timestamp && (Date.now() - data.timestamp > 600000)) return;
-
-        lastSeenTeaAlertId = data.id;
-
-        const msg = data.message || "Các Em đi châm trà đá cho khách nhé";
-        const msgEl = document.getElementById('teaAlertMessage');
-        if (msgEl) msgEl.innerText = msg;
-
-        document.getElementById('teaAlertModal').style.display = 'flex';
-    };
-
-    db.ref('tea_alert').on('value', snapshot => {
-        handleTeaAlertData(snapshot.val());
-    });
-    db.ref('notifications/cham_tra').on('value', snapshot => {
-        handleTeaAlertData(snapshot.val());
-    });
-
-    function triggerTeaAlert() {
-        const role = getUserRole();
-        if (role !== 'Quản lý') {
-            alert("Chức năng này chỉ dành cho tài khoản Quản lý!");
-            return;
-        }
-        const myDevId = localStorage.getItem('uc_dev_id');
-        const alertId = 'TEA_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-        const alertData = {
-            id: alertId,
-            message: "Các Em đi châm trà đá cho khách nhé",
-            timestamp: Date.now(),
-            senderId: myDevId || "MANAGER",
-            senderSessionId: currentSessionId
-        };
-
-        lastSeenTeaAlertId = alertId;
-
-        db.ref('tea_alert').set(alertData);
-        db.ref('notifications/cham_tra').set(alertData);
-        alert("Đã gửi thông báo châm trà đá đến các thiết bị!");
-    }
     db.ref('active_shift').on('value', s => { currentShift = s.val(); updateShiftUI(); renderActiveBills(); });
     db.ref('edit_logs').on('value', s => { renderEditHistory(); });
 
