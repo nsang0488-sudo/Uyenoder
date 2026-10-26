@@ -163,10 +163,16 @@
 
 <div class="navbar">
     <div style="font-weight: 900; color: var(--primary); font-size: 18px; letter-spacing: 1px;">UYÊN COFFEE</div>
-    <div style="display:flex; gap:8px;">
-        <button id="connStatusBtn" class="nav-item" style="background: #dc3545; color: white;" onclick="alert('Trạng thái kết nối mạng. Nếu mất kết nối, vui lòng đổi mạng WiFi khác để đảm bảo in đơn hàng thành công!')">🔴 Đang kiểm tra...</button>
-        <button class="nav-item" onclick="showTab('tasks')">📋 VIỆC</button>
-        <button class="nav-item" onclick="accessAdmin()">⚙️ QUẢN LÝ</button>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <button class="nav-item" onclick="triggerTeaAlert()">🍵 CHÂM TRÀ</button>
+        <div style="position: relative; display: inline-flex; align-items: center;">
+            <button class="nav-item" onclick="showTab('tasks')">📋 VIỆC</button>
+            <span id="connBadgeTasks" style="position: absolute; top: -6px; right: -6px; font-size: 9px; padding: 2px 4px; border-radius: 4px; color: white; background: #dc3545; font-weight: bold; pointer-events: none;">Yếu</span>
+        </div>
+        <div style="position: relative; display: inline-flex; align-items: center;">
+            <button class="nav-item" onclick="accessAdmin()">⚙️ QUẢN LÝ</button>
+            <span id="connBadgeAdmin" style="position: absolute; top: -6px; right: -6px; font-size: 9px; padding: 2px 4px; border-radius: 4px; color: white; background: #dc3545; font-weight: bold; pointer-events: none;">Yếu</span>
+        </div>
     </div>
 </div>
 
@@ -437,6 +443,14 @@
     </div>
 </div>
 
+<div id="teaAlertModal" class="modal-overlay" style="z-index: 2000000;">
+    <div class="modal" style="text-align: center; border: 3px solid var(--danger); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+        <div style="font-size: 40px; margin-bottom: 10px;">🍵</div>
+        <h2 style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Đi châm trà đá đi em</h2>
+        <button onclick="closeModal('teaAlertModal')" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">DẠ</button>
+    </div>
+</div>
+
 <div class="mobile-bottom-nav">
     <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
     <div class="m-btn" id="btn-tab-store" onclick="showTab('store')">🏪 CỬA HÀNG</div>
@@ -455,6 +469,25 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Theo dõi liên tục chất lượng kết nối bằng công cụ sẵn có của Firebase (.info/connected)
+    db.ref('.info/connected').on('value', function(snapshot) {
+        const badgeTasks = document.getElementById('connBadgeTasks');
+        const badgeAdmin = document.getElementById('connBadgeAdmin');
+        const isConnected = snapshot.val() === true;
+        
+        const bg = isConnected ? '#28a745' : '#dc3545';
+        const text = isConnected ? 'Tốt' : 'Yếu';
+
+        if(badgeTasks) {
+            badgeTasks.style.backgroundColor = bg;
+            badgeTasks.innerText = text;
+        }
+        if(badgeAdmin) {
+            badgeAdmin.style.backgroundColor = bg;
+            badgeAdmin.innerText = text;
+        }
+    });
+
     let currentTab = 'tables';
     let curTable = null, menuData = {}, tablesData = {}, currentShift = null, curType = 'Đá', tempItem = null, editIdx = null, payMethod = 'cash', qrUrl = "";
     let currentMoveMode = 'move';
@@ -462,21 +495,6 @@
     let currentRegCode = "";
     let isAdmin = false;
     let allDevicesData = {};
-
-    // Giám sát trạng thái kết nối Firebase trực quan trên Navbar để nhân viên kịp thời đổi mạng WiFi khi cần
-    firebase.database().ref('.info/connected').on('value', function(snapshot) {
-        const btn = document.getElementById('connStatusBtn');
-        if (!btn) return;
-        if (snapshot.val() === true) {
-            btn.style.background = '#28a745';
-            btn.style.color = '#ffffff';
-            btn.innerText = '🟢 Đã kết nối';
-        } else {
-            btn.style.background = '#dc3545';
-            btn.style.color = '#ffffff';
-            btn.innerText = '🔴 Mất kết nối (Đổi WiFi)';
-        }
-    });
 
     db.ref('settings/regCode').on('value', s => {
         currentRegCode = s.val() || "Chưa có";
@@ -592,6 +610,40 @@
     db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
 
+    let lastTeaAlertTimestamp = Date.now();
+    const handleTeaAlertData = (data) => {
+        if (!data || !data.timestamp || data.timestamp <= lastTeaAlertTimestamp) return;
+        lastTeaAlertTimestamp = data.timestamp;
+        const myDevId = localStorage.getItem('uc_dev_id');
+        if (data.senderId && myDevId && data.senderId === myDevId) {
+            return;
+        }
+        document.getElementById('teaAlertModal').style.display = 'flex';
+    };
+
+    db.ref('tea_alert').on('value', snapshot => {
+        handleTeaAlertData(snapshot.val());
+    });
+    db.ref('notifications/cham_tra').on('value', snapshot => {
+        handleTeaAlertData(snapshot.val());
+    });
+
+    function triggerTeaAlert() {
+        const role = getUserRole();
+        if (role !== 'Quản lý') {
+            alert("Chức năng này chỉ dành cho tài khoản Quản lý!");
+            return;
+        }
+        const myDevId = localStorage.getItem('uc_dev_id');
+        const alertData = {
+            message: "Đi châm trà đá đi em",
+            timestamp: Date.now(),
+            senderId: myDevId || "MANAGER"
+        };
+        db.ref('tea_alert').set(alertData);
+        db.ref('notifications/cham_tra').set(alertData);
+        alert("Đã gửi thông báo châm trà đá đến các thiết bị!");
+    }
     db.ref('active_shift').on('value', s => { currentShift = s.val(); updateShiftUI(); renderActiveBills(); });
     db.ref('edit_logs').on('value', s => { renderEditHistory(); });
 
@@ -1188,16 +1240,19 @@
         if (lblTotalSum) lblTotalSum.innerText = totalFormatted;
     }
 
+    // 1. KHI BẤM XÁC NHẬN -> BỔ SUNG TÊN NHÂN VIÊN ĐỂ MÁY IN IN RA
     function handleConfirm() { 
         if(!curTable) return; 
 
         let tableData = tablesData[curTable];
         let items = tableData?.items || [];
 
+        // Đảm bảo các món cũ không có thuộc tính sent được xử lý là đã in (true)
         items.forEach(it => {
             if (it.sent === undefined) it.sent = true;
         });
 
+        // Lọc ra các món chưa gửi bếp (sent === false)
         let newItems = items.filter(it => it.sent === false);
 
         if (newItems.length === 0) {
@@ -1207,12 +1262,14 @@
 
         db.ref('tables/'+curTable).update({status: 'red'}); 
 
+        // Lấy tên nhân viên đang thực hiện xác nhận
         let staffName = "Admin";
         const myDevId = localStorage.getItem('uc_dev_id');
         if (myDevId && allDevicesData[myDevId] && allDevicesData[myDevId].name) {
             staffName = allDevicesData[myDevId].name;
         }
 
+        // Gắn printedItem: false để app máy in nhận diện đúng đơn
         let preparedItems = newItems.map(it => ({
             ...it,
             printedItem: false
@@ -1224,11 +1281,12 @@
             items: preparedItems,
             timestamp: Date.now(),
             printed: false,
-            staffName: staffName,  
-            staff: staffName       
+            staffName: staffName,  // Bổ sung để máy in in ra tên nhân viên
+            staff: staffName       // Dự phòng tương thích các biến thể key
         };
         db.ref('orders').push(orderPayload);
 
+        // Đánh dấu tất cả món hiện tại thành đã gửi (sent = true)
         items.forEach(it => {
             it.sent = true;
         });
@@ -1273,6 +1331,7 @@
         setPayMethod('cash');
     }
 
+    // 2. KHI BẤM THANH TOÁN (Không in HĐ hoặc In HĐ)
     function handlePay(shouldPrint) {
         if(!checkShiftRequired()) return;
         const total = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,''));
@@ -1306,9 +1365,10 @@
         
         db.ref().update(updates);
 
+        // Nếu chọn In HĐ thì đẩy lệnh in vào queue
         if (shouldPrint) {
             let receiptPayload = {
-                type: 'receipt', 
+                type: 'receipt', // Đánh dấu là Hóa đơn thanh toán
                 table: curTable,
                 items: tableInfo.items || [],
                 total: total,
