@@ -751,18 +751,19 @@
     function endShift() {
         if(!currentShift) return alert("Không có ca nào đang mở!");
         if(confirm("Xác nhận CHỐT CA? Toàn bộ bàn sẽ được dọn trống và dữ liệu sẽ được xuất ra báo cáo Google Sheets.")) {
-         let chiTietHoaDon = "";
-        if (currentShift.history) {
-            Object.values(currentShift.history).forEach((bill) => {
-                bill.items.forEach(it => {
-                    let thanhTienMon = it.price * it.qty;
-                    chiTietHoaDon += `${it.fName} x${it.qty}  ${thanhTienMon.toLocaleString()}đ\n`;
+            let chiTietHoaDon = "";
+            if (currentShift.history) {
+                Object.values(currentShift.history).forEach((bill) => {
+                    // Thêm bảo vệ || [] để tránh lỗi khi bill không có items
+                    (bill.items || []).forEach(it => {
+                        let thanhTienMon = it.price * it.qty;
+                        chiTietHoaDon += `${it.fName} x${it.qty}  ${thanhTienMon.toLocaleString()}đ\n`;
+                    });
                 });
-            });
-            chiTietHoaDon = chiTietHoaDon.trim();
-        } else {
-            chiTietHoaDon = "Không có đơn hàng";
-        }
+                chiTietHoaDon = chiTietHoaDon.trim();
+            } else {
+                chiTietHoaDon = "Không có đơn hàng";
+            }
 
             const payload = {
                 ngayThang: new Date().toLocaleDateString('vi-VN'),
@@ -1184,19 +1185,16 @@
         if (lblTotalSum) lblTotalSum.innerText = totalFormatted;
     }
 
-    // 1. KHI BẤM XÁC NHẬN -> BỔ SUNG TÊN NHÂN VIÊN ĐỂ MÁY IN IN RA
     function handleConfirm() { 
         if(!curTable) return; 
 
         let tableData = tablesData[curTable];
         let items = tableData?.items || [];
 
-        // Đảm bảo các món cũ không có thuộc tính sent được xử lý là đã in (true)
         items.forEach(it => {
             if (it.sent === undefined) it.sent = true;
         });
 
-        // Lọc ra các món chưa gửi bếp (sent === false)
         let newItems = items.filter(it => it.sent === false);
 
         if (newItems.length === 0) {
@@ -1206,14 +1204,12 @@
 
         db.ref('tables/'+curTable).update({status: 'red'}); 
 
-        // Lấy tên nhân viên đang thực hiện xác nhận
         let staffName = "Admin";
         const myDevId = localStorage.getItem('uc_dev_id');
         if (myDevId && allDevicesData[myDevId] && allDevicesData[myDevId].name) {
             staffName = allDevicesData[myDevId].name;
         }
 
-        // Gắn printedItem: false để app máy in nhận diện đúng đơn
         let preparedItems = newItems.map(it => ({
             ...it,
             printedItem: false
@@ -1225,12 +1221,11 @@
             items: preparedItems,
             timestamp: Date.now(),
             printed: false,
-            staffName: staffName,  // Bổ sung để máy in in ra tên nhân viên
-            staff: staffName       // Dự phòng tương thích các biến thể key
+            staffName: staffName,  
+            staff: staffName       
         };
         db.ref('orders').push(orderPayload);
 
-        // Đánh dấu tất cả món hiện tại thành đã gửi (sent = true)
         items.forEach(it => {
             it.sent = true;
         });
@@ -1275,7 +1270,6 @@
         setPayMethod('cash');
     }
 
-    // 2. KHI BẤM THANH TOÁN (Không in HĐ hoặc In HĐ)
     function handlePay(shouldPrint) {
         if(!checkShiftRequired()) return;
         const total = parseInt(document.getElementById('payTotal').innerText.replace(/\D/g,''));
@@ -1309,10 +1303,9 @@
         
         db.ref().update(updates);
 
-        // Nếu chọn In HĐ thì đẩy lệnh in vào queue
         if (shouldPrint) {
             let receiptPayload = {
-                type: 'receipt', // Đánh dấu là Hóa đơn thanh toán
+                type: 'receipt', 
                 table: curTable,
                 items: tableInfo.items || [],
                 total: total,
