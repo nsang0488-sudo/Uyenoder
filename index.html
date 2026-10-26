@@ -163,16 +163,13 @@
 
 <div class="navbar">
     <div style="font-weight: 900; color: var(--primary); font-size: 18px; letter-spacing: 1px;">UYÊN COFFEE</div>
-    <div style="display:flex; gap:8px; align-items:center;">
-        <button class="nav-item" onclick="triggerTeaAlert()">🍵 CHÂM TRÀ</button>
-        <div style="position: relative; display: inline-flex; align-items: center;">
-            <button class="nav-item" onclick="showTab('tasks')">📋 VIỆC</button>
-            <span id="connBadgeTasks" style="position: absolute; top: -6px; right: -6px; font-size: 9px; padding: 2px 4px; border-radius: 4px; color: white; background: #dc3545; font-weight: bold; pointer-events: none;">Yếu</span>
+    <div style="display:flex; gap:8px; align-items: center;">
+        <div id="connectionStatusIndicator" class="nav-item" style="background: #f1f3f5; color: #495057; display: flex; align-items: center; gap: 6px; cursor: default; border: 1px solid #ced4da; padding: 8px 12px;">
+            <span id="connDot" style="width: 9px; height: 9px; background: #ffc107; border-radius: 50%; display: inline-block;"></span>
+            <span id="connText" style="font-size: 11px; font-weight: bold;">Kết nối...</span>
         </div>
-        <div style="position: relative; display: inline-flex; align-items: center;">
-            <button class="nav-item" onclick="accessAdmin()">⚙️ QUẢN LÝ</button>
-            <span id="connBadgeAdmin" style="position: absolute; top: -6px; right: -6px; font-size: 9px; padding: 2px 4px; border-radius: 4px; color: white; background: #dc3545; font-weight: bold; pointer-events: none;">Yếu</span>
-        </div>
+        <button class="nav-item" onclick="showTab('tasks')">📋 VIỆC</button>
+        <button class="nav-item" onclick="accessAdmin()">⚙️ QUẢN LÝ</button>
     </div>
 </div>
 
@@ -443,14 +440,6 @@
     </div>
 </div>
 
-<div id="teaAlertModal" class="modal-overlay" style="z-index: 2000000;">
-    <div class="modal" style="text-align: center; border: 3px solid var(--danger); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-        <div style="font-size: 40px; margin-bottom: 10px;">🍵</div>
-        <h2 style="color: var(--danger); margin: 0 0 15px 0; font-size: 22px; font-weight: 900;">Đi châm trà đá đi em</h2>
-        <button onclick="closeModal('teaAlertModal')" style="width: 100%; background: var(--danger-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">DẠ</button>
-    </div>
-</div>
-
 <div class="mobile-bottom-nav">
     <div class="m-btn active" id="btn-tab-tables" onclick="showTab('tables')">🪑 BÀN</div>
     <div class="m-btn" id="btn-tab-store" onclick="showTab('store')">🏪 CỬA HÀNG</div>
@@ -469,22 +458,19 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Theo dõi liên tục chất lượng kết nối bằng công cụ sẵn có của Firebase (.info/connected)
+    // Theo dõi trạng thái kết nối mạng thời gian thực với Firebase
     db.ref('.info/connected').on('value', function(snapshot) {
-        const badgeTasks = document.getElementById('connBadgeTasks');
-        const badgeAdmin = document.getElementById('connBadgeAdmin');
-        const isConnected = snapshot.val() === true;
-        
-        const bg = isConnected ? '#28a745' : '#dc3545';
-        const text = isConnected ? 'Tốt' : 'Yếu';
-
-        if(badgeTasks) {
-            badgeTasks.style.backgroundColor = bg;
-            badgeTasks.innerText = text;
-        }
-        if(badgeAdmin) {
-            badgeAdmin.style.backgroundColor = bg;
-            badgeAdmin.innerText = text;
+        const dot = document.getElementById('connDot');
+        const text = document.getElementById('connText');
+        const indicator = document.getElementById('connectionStatusIndicator');
+        if (snapshot.val() === true) {
+            if (dot) { dot.style.background = '#28a745'; } // Xanh lá: Mạng tốt, kết nối ổn định gửi được ngay
+            if (text) { text.innerText = 'Mạng Tốt'; text.style.color = '#28a745'; }
+            if (indicator) { indicator.style.borderColor = '#28a745'; indicator.style.background = '#e8f5e9'; }
+        } else {
+            if (dot) { dot.style.background = '#dc3545'; } // Đỏ: Mất mạng hoặc chập chờn
+            if (text) { text.innerText = 'Mất Mạng / Yếu'; text.style.color = '#dc3545'; }
+            if (indicator) { indicator.style.borderColor = '#dc3545'; indicator.style.background = '#f8d7da'; }
         }
     });
 
@@ -610,40 +596,6 @@
     db.ref('menu').on('value', s => { menuData = s.val()||{}; renderMenu(); renderAdminMenu(); });
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
 
-    let lastTeaAlertTimestamp = Date.now();
-    const handleTeaAlertData = (data) => {
-        if (!data || !data.timestamp || data.timestamp <= lastTeaAlertTimestamp) return;
-        lastTeaAlertTimestamp = data.timestamp;
-        const myDevId = localStorage.getItem('uc_dev_id');
-        if (data.senderId && myDevId && data.senderId === myDevId) {
-            return;
-        }
-        document.getElementById('teaAlertModal').style.display = 'flex';
-    };
-
-    db.ref('tea_alert').on('value', snapshot => {
-        handleTeaAlertData(snapshot.val());
-    });
-    db.ref('notifications/cham_tra').on('value', snapshot => {
-        handleTeaAlertData(snapshot.val());
-    });
-
-    function triggerTeaAlert() {
-        const role = getUserRole();
-        if (role !== 'Quản lý') {
-            alert("Chức năng này chỉ dành cho tài khoản Quản lý!");
-            return;
-        }
-        const myDevId = localStorage.getItem('uc_dev_id');
-        const alertData = {
-            message: "Đi châm trà đá đi em",
-            timestamp: Date.now(),
-            senderId: myDevId || "MANAGER"
-        };
-        db.ref('tea_alert').set(alertData);
-        db.ref('notifications/cham_tra').set(alertData);
-        alert("Đã gửi thông báo châm trà đá đến các thiết bị!");
-    }
     db.ref('active_shift').on('value', s => { currentShift = s.val(); updateShiftUI(); renderActiveBills(); });
     db.ref('edit_logs').on('value', s => { renderEditHistory(); });
 
@@ -733,12 +685,7 @@
     function formatQRDisplayUrl(url) {
         if (!url) return "";
         if (url.includes('drive.google.com')) {
-            let fileId = "";
-            if (url.includes('/d/')) {
-                fileId = url.split('/d/')[1]?.split('/')[0]?.split('?')[0];
-            } else if (url.includes('id=')) {
-                fileId = url.split('id=')[1]?.split('&')[0];
-            }
+            let fileId = url.split('/d/')[1]?.split('/')[0];
             if (fileId) return `https://drive.google.com/thumbnail?id=${fileId}&sz=w500`;
         }
         return url;
@@ -763,23 +710,20 @@
         updateQRDisplay();
     }
 
-    db.ref('settings').on('value', s => {
-        const settings = s.val() || {};
-        const qrUrls = settings.qrUrls || {};
-
-        qrUrl1 = qrUrls.tk1 || settings.qrUrl || "";
-        qrUrl2 = qrUrls.tk2 || settings.qrUrl2 || "";
-        qrUrl3 = qrUrls.tk3 || settings.qrUrl3 || "";
+    db.ref('settings/qrUrl').on('value', s => {
+        qrUrl1 = s.val() || "";
         qrUrl = qrUrl1;
-
-        const input1 = document.getElementById('qrUrlInput');
-        const input2 = document.getElementById('qrUrlInput2');
-        const input3 = document.getElementById('qrUrlInput3');
-
-        if (input1) input1.value = qrUrl1;
-        if (input2) input2.value = qrUrl2;
-        if (input3) input3.value = qrUrl3;
-
+        document.getElementById('qrUrlInput').value = qrUrl1;
+        updateQRDisplay();
+    });
+    db.ref('settings/qrUrl2').on('value', s => {
+        qrUrl2 = s.val() || "";
+        document.getElementById('qrUrlInput2').value = qrUrl2;
+        updateQRDisplay();
+    });
+    db.ref('settings/qrUrl3').on('value', s => {
+        qrUrl3 = s.val() || "";
+        document.getElementById('qrUrlInput3').value = qrUrl3;
         updateQRDisplay();
     });
 
@@ -1647,12 +1591,7 @@
         db.ref('settings').update({
             qrUrl: u1,
             qrUrl2: u2,
-            qrUrl3: u3,
-            qrUrls: {
-                tk1: u1,
-                tk2: u2,
-                tk3: u3
-            }
+            qrUrl3: u3
         }).then(() => alert("Đã lưu thông tin QR cả 3 tài khoản!"));
     }
 
