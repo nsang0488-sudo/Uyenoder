@@ -345,13 +345,9 @@
         </div>
 
         <div class="admin-section">
-            <h3 style="margin-top:0;">🖼️ Cài Đặt QR (3 Tài Khoản)</h3>
-            <label style="font-size:12px; font-weight:bold; color:var(--dark);">Tài khoản 1 (TK 1):</label>
-            <input type="text" id="qrUrlInput" placeholder="Link ảnh QR TK 1..." style="width:100%;padding:12px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
-            <label style="font-size:12px; font-weight:bold; color:var(--dark);">Tài khoản 2 (TK 2):</label>
-            <input type="text" id="qrUrlInput2" placeholder="Link ảnh QR TK 2..." style="width:100%;padding:12px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
-            <label style="font-size:12px; font-weight:bold; color:var(--dark);">Tài khoản 3 (TK 3):</label>
-            <input type="text" id="qrUrlInput3" placeholder="Link ảnh QR TK 3..." style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
+            <h3 style="margin-top:0;">🖼️ Cài Đặt Tài Khoản QR</h3>
+            <label style="font-size:12px; font-weight:bold; color:var(--dark);">Link ảnh QR Thanh Toán (Mặc định):</label>
+            <input type="text" id="qrUrlInput" placeholder="Link ảnh QR..." style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
             <button onclick="saveQR()" style="width:100%;padding:14px;background:var(--dark);color:white;border:none;border-radius:10px; font-weight: bold;">LƯU QR</button>
         </div>
     </div>
@@ -396,11 +392,6 @@
             <div style="margin:20px 0; font-size:20px; text-align: center;">Thối: <b id="cashChange" style="color:var(--success)">0đ</b></div>
         </div>
         <div id="transferSection" style="display:none; text-align:center;">
-            <div style="display:flex; justify-content:center; gap:8px; margin-bottom:10px;">
-                <button id="qrAccBtn1" class="opt-btn active" onclick="selectQRAccount(1)" style="flex:1; padding:8px; font-size:12px;">TK 1</button>
-                <button id="qrAccBtn2" class="opt-btn" onclick="selectQRAccount(2)" style="flex:1; padding:8px; font-size:12px;">TK 2</button>
-                <button id="qrAccBtn3" class="opt-btn" onclick="selectQRAccount(3)" style="flex:1; padding:8px; font-size:12px;">TK 3</button>
-            </div>
             <img id="qrDisplay" class="qr-image-display" src="">
         </div>
         <button onclick="handlePay(false)" style="width:100%; background:var(--dark); color:white; padding:14px; border:none; border-radius:12px; font-weight:bold; font-size: 14px; margin-bottom: 8px;">KHÔNG IN HĐ</button>
@@ -458,17 +449,16 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Theo dõi trạng thái kết nối mạng thời gian thực với Firebase
     db.ref('.info/connected').on('value', function(snapshot) {
         const dot = document.getElementById('connDot');
         const text = document.getElementById('connText');
         const indicator = document.getElementById('connectionStatusIndicator');
         if (snapshot.val() === true) {
-            if (dot) { dot.style.background = '#28a745'; } // Xanh lá: Mạng tốt, kết nối ổn định gửi được ngay
+            if (dot) { dot.style.background = '#28a745'; }
             if (text) { text.innerText = 'Mạng Tốt'; text.style.color = '#28a745'; }
             if (indicator) { indicator.style.borderColor = '#28a745'; indicator.style.background = '#e8f5e9'; }
         } else {
-            if (dot) { dot.style.background = '#dc3545'; } // Đỏ: Mất mạng hoặc chập chờn
+            if (dot) { dot.style.background = '#dc3545'; }
             if (text) { text.innerText = 'Mất Mạng / Yếu'; text.style.color = '#dc3545'; }
             if (indicator) { indicator.style.borderColor = '#dc3545'; indicator.style.background = '#f8d7da'; }
         }
@@ -655,6 +645,13 @@
 
     function deleteActiveTableBill() {
         if (!curTable) return alert("Chưa chọn bàn!");
+        
+        // Ràng buộc quyền quản lý mới được xóa tổng bill
+        const role = getUserRole();
+        if (role !== 'Quản lý') {
+            return alert("Chỉ có tài khoản Quản lý mới có quyền xóa tổng hóa đơn!");
+        }
+
         const tableData = tablesData[curTable];
         const items = tableData?.items || [];
         if (!items || items.length === 0) {
@@ -680,7 +677,6 @@
             alert("Lỗi khi xóa hóa đơn: " + err.message);
         });
     }
-    let qrUrl1 = "", qrUrl2 = "", qrUrl3 = "", selectedQRAcc = 1;
 
     function formatQRDisplayUrl(url) {
         if (!url) return "";
@@ -692,8 +688,7 @@
     }
 
     function updateQRDisplay() {
-        let currentUrl = selectedQRAcc === 1 ? qrUrl1 : (selectedQRAcc === 2 ? qrUrl2 : qrUrl3);
-        let displayUrl = formatQRDisplayUrl(currentUrl);
+        let displayUrl = formatQRDisplayUrl(qrUrl);
         const imgEl = document.getElementById('qrDisplay');
         if (imgEl) {
             imgEl.src = displayUrl;
@@ -701,29 +696,9 @@
         }
     }
 
-    function selectQRAccount(accNum) {
-        selectedQRAcc = accNum;
-        [1, 2, 3].forEach(n => {
-            const btn = document.getElementById('qrAccBtn' + n);
-            if (btn) btn.className = n === accNum ? 'opt-btn active' : 'opt-btn';
-        });
-        updateQRDisplay();
-    }
-
     db.ref('settings/qrUrl').on('value', s => {
-        qrUrl1 = s.val() || "";
-        qrUrl = qrUrl1;
-        document.getElementById('qrUrlInput').value = qrUrl1;
-        updateQRDisplay();
-    });
-    db.ref('settings/qrUrl2').on('value', s => {
-        qrUrl2 = s.val() || "";
-        document.getElementById('qrUrlInput2').value = qrUrl2;
-        updateQRDisplay();
-    });
-    db.ref('settings/qrUrl3').on('value', s => {
-        qrUrl3 = s.val() || "";
-        document.getElementById('qrUrlInput3').value = qrUrl3;
+        qrUrl = s.val() || "";
+        document.getElementById('qrUrlInput').value = qrUrl;
         updateQRDisplay();
     });
 
@@ -754,7 +729,6 @@
             let chiTietHoaDon = "";
             if (currentShift.history) {
                 Object.values(currentShift.history).forEach((bill) => {
-                    // Thêm bảo vệ || [] để tránh lỗi khi bill không có items
                     (bill.items || []).forEach(it => {
                         let thanhTienMon = it.price * it.qty;
                         chiTietHoaDon += `${it.fName} x${it.qty}  ${thanhTienMon.toLocaleString()}đ\n`;
@@ -869,6 +843,12 @@
     }
 
     function deleteItemInBill(billKey, itemIdx) {
+        // Ràng buộc quyền quản lý mới được xóa món trong bill đã thanh toán
+        const role = getUserRole();
+        if (role !== 'Quản lý') {
+            return alert("Chỉ có tài khoản Quản lý mới có quyền xóa món khỏi hóa đơn đã thanh toán!");
+        }
+
         if (!currentShift || !currentShift.history || !currentShift.history[billKey]) return;
         const bill = currentShift.history[billKey];
         const item = bill.items ? bill.items[itemIdx] : null;
@@ -895,6 +875,12 @@
     }
 
     function deleteBill(key) {
+        // Ràng buộc quyền quản lý mới được xóa bill đã thanh toán
+        const role = getUserRole();
+        if (role !== 'Quản lý') {
+            return alert("Chỉ có tài khoản Quản lý mới có quyền xóa hóa đơn đã thanh toán!");
+        }
+
         if (!currentShift || !currentShift.history || !currentShift.history[key]) return;
         const bill = currentShift.history[key];
         const method = bill.method || 'cash';
@@ -1352,7 +1338,8 @@
         let newQty = parseInt(document.getElementById('qtyVal').innerText) || 0;
         let addedNote = document.getElementById('editItemNote').value.trim();
 
-        if (newQty < oldQty) {
+        // YÊU CẦU 2: Chỉ món nào đã xác nhận/đã in (sent === true) khi xóa hoặc giảm mới cần nhập lý do
+        if (item.sent && newQty < oldQty) {
             let isDelete = (newQty === 0);
             let promptMsg = isDelete ? `Nhập lý do xóa món ${item.fName}:` : `Nhập lý do giảm số lượng món ${item.fName} (${oldQty}x ➔ ${newQty}x):`;
             let reason = prompt(promptMsg);
@@ -1435,7 +1422,8 @@
         let newQty = parseInt(document.getElementById('qtyVal').innerText) || 0;
         let addedNote = document.getElementById('editItemNote').value.trim();
 
-        if (newQty < oldQty) {
+        // YÊU CẦU 2: Chỉ món đã xác nhận (sent === true) mới cần nhập lý do khi giảm/xóa
+        if (item.sent && newQty < oldQty) {
             let isDelete = (newQty === 0);
             let promptMsg = isDelete ? `Nhập lý do xóa món ${item.fName}:` : `Nhập lý do giảm số lượng món ${item.fName} (${oldQty}x ➔ ${newQty}x):`;
             let reason = prompt(promptMsg);
@@ -1549,9 +1537,9 @@
         document.getElementById('payTransferBtn').className = m==='transfer'?'opt-btn active':'opt-btn';
         document.getElementById('cashSection').style.display = m==='cash'?'block':'none';
         document.getElementById('transferSection').style.display = m==='transfer'?'block':'none';
-        if (m === 'transfer') selectQRAccount(1);
-        else updateQRDisplay();
+        updateQRDisplay();
     }
+
     function updateShiftUI() {
         const s = document.getElementById('shiftSummary');
         if(currentShift) {
@@ -1579,13 +1567,9 @@
 
     function saveQR() {
         let u1 = document.getElementById('qrUrlInput').value.trim();
-        let u2 = document.getElementById('qrUrlInput2').value.trim();
-        let u3 = document.getElementById('qrUrlInput3').value.trim();
         db.ref('settings').update({
-            qrUrl: u1,
-            qrUrl2: u2,
-            qrUrl3: u3
-        }).then(() => alert("Đã lưu thông tin QR cả 3 tài khoản!"));
+            qrUrl: u1
+        }).then(() => alert("Đã lưu link ảnh QR thanh toán mặc định!"));
     }
 
     function showTab(id) {
