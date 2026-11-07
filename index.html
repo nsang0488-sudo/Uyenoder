@@ -189,6 +189,7 @@
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
                 <button onclick="deleteActiveTableBill()" style="background: rgba(220, 53, 69, 0.25); color: #fff; border: 1px solid rgba(255,255,255,0.4); padding: 4px 8px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 3px;" title="Xóa bill">🗑️</button>
+                <button onclick="printTempBill()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 4px 8px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 3px;" title="In tạm tính">🖨️</button>
                 <button onclick="openMoveTable()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold;">CHUYỂN</button>
                 <span style="font-size: 18px; cursor: pointer;" onclick="toggleOrderSubView()">⇆</span>
             </div>
@@ -838,7 +839,7 @@
             let itemsHtml = (bill.items || []).map((it, idx) => {
                 return `<div class="detail-item"><span><b>${it.qty}x</b> ${it.fName}</span><span>${(it.price * it.qty).toLocaleString()}đ <span style="color:var(--danger); cursor:pointer; font-weight:bold; margin-left:5px;" onclick="deleteItemInBill('${key}', ${idx})"> (X)</span></span></div>`;
             }).join('');
-            list.innerHTML += `<div class="bill-history-card"><div style="margin-bottom:8px;"><b>Bàn ${bill.table} (${timeDetail})${staffDisplay} - <span style="color:${bill.method === 'transfer' ? 'var(--primary)' : 'var(--success)'}">${bill.method === 'transfer' ? '💳 CK' : '💵 TM'}</span></b><button style="float:right; color:white; background:var(--danger); border:none; border-radius:4px; font-weight:bold; padding:4px 8px; font-size:10px;" onclick="deleteBill('${key}')">XÓA</button></div>${itemsHtml}<div style="color:var(--primary); font-weight:900; margin-top:10px; border-top:1px solid #eee; padding-top:8px; font-size:15px;">Tổng: ${bill.total.toLocaleString()}đ</div></div>`;
+            list.innerHTML += `<div class="bill-history-card"><div style="margin-bottom:8px;"><b>Bàn ${bill.table} (${timeDetail})${staffDisplay} - <span style="color:${bill.method === 'transfer' ? 'var(--primary)' : 'var(--success)'}">${bill.method === 'transfer' ? '💳 CK' : '💵 TM'}</span></b><div style="float:right; display:flex; gap:5px;"><button style="color:white; background:var(--primary); border:none; border-radius:4px; font-weight:bold; padding:4px 8px; font-size:10px; cursor:pointer;" onclick="reprintBill('${key}')">IN LẠI</button><button style="color:white; background:var(--danger); border:none; border-radius:4px; font-weight:bold; padding:4px 8px; font-size:10px; cursor:pointer;" onclick="deleteBill('${key}')">XÓA</button></div></div>${itemsHtml}<div style="color:var(--primary); font-weight:900; margin-top:10px; border-top:1px solid #eee; padding-top:8px; font-size:15px;">Tổng: ${bill.total.toLocaleString()}đ</div></div>`;
         });
     }
 
@@ -872,6 +873,36 @@
         if(method === 'cash') updates['active_shift/revenueCash'] = (currentShift.revenueCash||0) - subAmount;
         else updates['active_shift/revenueTransfer'] = (currentShift.revenueTransfer||0) - subAmount;
         db.ref().update(updates);
+    }
+
+    function reprintBill(key) {
+        if (!currentShift || !currentShift.history || !currentShift.history[key]) return;
+        const bill = currentShift.history[key];
+
+        let timeDetail = `Vào: ${bill.startTime || 'N/A'} - Ra: ${bill.payTime || bill.time || 'N/A'}`;
+        let staffDisplay = bill.payStaff || bill.staff || "Admin";
+
+        if (!confirm(`XÁC NHẬN IN LẠI HÓA ĐƠN?\n\n- Bàn: ${bill.table}\n- Thời gian: ${timeDetail}\n- Thu ngân: ${staffDisplay}\n- Tổng tiền: ${(bill.total || 0).toLocaleString()}đ\n\nBạn có chắc chắn muốn gửi lệnh in lại hóa đơn này không?`)) {
+            return;
+        }
+
+        let receiptPayload = {
+            type: 'receipt',
+            isReprint: true,
+            table: bill.table,
+            items: bill.items || [],
+            total: bill.total || 0,
+            timestamp: Date.now(),
+            printed: false,
+            staffName: staffDisplay,
+            staff: staffDisplay
+        };
+
+        db.ref('orders').push(receiptPayload).then(() => {
+            alert("Đã gửi yêu cầu in lại hóa đơn Bàn " + bill.table + " thành công!");
+        }).catch(err => {
+            alert("Lỗi khi gửi yêu cầu in lại hóa đơn: " + err.message);
+        });
     }
 
     function deleteBill(key) {
@@ -1309,6 +1340,42 @@
         renderTables(); 
     }
 
+    function printTempBill() {
+        if (!curTable) return alert("Chưa chọn bàn!");
+        const tableInfo = tablesData[curTable] || {};
+        const items = tableInfo.items || [];
+        if (items.length === 0) {
+            return alert("Bàn " + curTable + " chưa có món nào để in tạm tính!");
+        }
+
+        let staffName = "Admin";
+        const myDevId = localStorage.getItem('uc_dev_id');
+        if (myDevId && allDevicesData && allDevicesData[myDevId] && allDevicesData[myDevId].name) {
+            staffName = allDevicesData[myDevId].name;
+        }
+
+        let total = 0;
+        items.forEach(it => { total += (it.price * it.qty); });
+
+        let receiptPayload = {
+            type: 'receipt',
+            isTemp: true,
+            table: curTable,
+            items: items,
+            total: total,
+            timestamp: Date.now(),
+            printed: false,
+            staffName: staffName,
+            staff: staffName
+        };
+
+        db.ref('orders').push(receiptPayload).then(() => {
+            alert("Đã gửi yêu cầu in tạm tính Bàn " + curTable + " thành công!");
+        }).catch(err => {
+            alert("Lỗi khi gửi yêu cầu in tạm tính: " + err.message);
+        });
+    }
+
     function openQtyEdit(idx) {
         editIdx = idx; let it = tablesData[curTable].items[idx];
         document.getElementById('qtyName').innerText = it.fName;
@@ -1547,13 +1614,26 @@
             if (currentShift.history) {
                 Object.values(currentShift.history).forEach(bill => {
                     let staffName = bill.payStaff || bill.staff || "Chưa xác định";
-                    staffRevenue[staffName] = (staffRevenue[staffName] || 0) + (bill.total || 0);
+                    if (!staffRevenue[staffName]) {
+                        staffRevenue[staffName] = { total: 0, cash: 0, transfer: 0 };
+                    }
+                    let amt = bill.total || 0;
+                    staffRevenue[staffName].total += amt;
+                    if (bill.method === 'transfer') {
+                        staffRevenue[staffName].transfer += amt;
+                    } else {
+                        staffRevenue[staffName].cash += amt;
+                    }
                 });
             }
 
             let staffBreakdownHtml = "";
             Object.keys(staffRevenue).forEach(staff => {
-                staffBreakdownHtml += `<div style="font-size:14px; font-weight:bold; color:var(--dark); margin-top:3px;">${staff} : ${staffRevenue[staff].toLocaleString()}đ</div>`;
+                let stat = staffRevenue[staff];
+                staffBreakdownHtml += `<div style="font-size:14px; font-weight:bold; color:var(--dark); margin-top:4px;">
+                    • ${staff} : <span style="color:var(--dark);">${stat.total.toLocaleString()}đ</span>
+                    <span style="font-size:12px; font-weight:normal; color:#555;">(💵 TM: <b style="color:var(--success);">${stat.cash.toLocaleString()}đ</b> | 💳 CK: <b style="color:var(--primary);">${stat.transfer.toLocaleString()}đ</b>)</span>
+                </div>`;
             });
 
             if (!staffBreakdownHtml) {
