@@ -305,6 +305,23 @@
             <button onclick="addMenu()" style="width:100%;padding:14px;background:var(--primary-gradient);color:white;border:none;border-radius:10px; font-weight: bold;">THÊM MÓN</button>
             <div id="adminMenu" style="margin-top:15px; max-height:300px; overflow-y:auto; padding-right: 5px;"></div>
         </div>
+
+        <div class="admin-section" id="printKitchenSettingSection">
+            <h3 style="margin-top:0;">🖨️ Cài Đặt In Phiếu Bếp (Xác Nhận Đơn)</h3>
+            <p style="font-size:13px; color:#666; margin-top:0; margin-bottom:12px; line-height: 1.5;">
+                Khi <b>BẬT (ON)</b>: Bấm "Xác nhận" sẽ gửi lệnh in món mới về máy in bếp.<br>
+                Khi <b>TẮT (OFF)</b>: Bấm "Xác nhận" chỉ cập nhật món vào hệ thống, không gửi lệnh in về máy in giúp tiết kiệm giấy.
+            </p>
+            <div style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:12px 16px; border-radius:10px; border:1px solid #eee;">
+                <div>
+                    <span style="font-weight:bold; font-size:14px; color:var(--dark);">Trạng thái in phiếu order:</span>
+                    <div id="kitchenPrintStatusText" style="font-size:12px; font-weight:bold; color:var(--success); margin-top:2px;">ĐANG BẬT IN (ON)</div>
+                </div>
+                <button id="btnToggleKitchenPrint" onclick="toggleKitchenPrint()" style="padding:10px 20px; font-size:14px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; background:var(--success); color:white; transition: all 0.2s ease;">
+                    BẬT (ON)
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -702,6 +719,46 @@
         document.getElementById('qrUrlInput').value = qrUrl;
         updateQRDisplay();
     });
+
+    let isKitchenPrintEnabled = localStorage.getItem('uc_kitchen_print_enabled') !== 'false';
+
+    function updateKitchenPrintUI() {
+        const statusText = document.getElementById('kitchenPrintStatusText');
+        const btnToggle = document.getElementById('btnToggleKitchenPrint');
+        if (!statusText || !btnToggle) return;
+
+        if (isKitchenPrintEnabled) {
+            statusText.innerText = "ĐANG BẬT IN (ON)";
+            statusText.style.color = "var(--success)";
+            btnToggle.innerText = "BẬT (ON)";
+            btnToggle.style.background = "var(--success)";
+        } else {
+            statusText.innerText = "ĐANG CHẶN IN (OFF)";
+            statusText.style.color = "var(--danger)";
+            btnToggle.innerText = "TẮT (OFF)";
+            btnToggle.style.background = "var(--danger)";
+        }
+    }
+
+    db.ref('settings/kitchenOrderPrint').on('value', s => {
+        const val = s.val();
+        if (val !== null && val !== undefined) {
+            isKitchenPrintEnabled = (val === true);
+        }
+        localStorage.setItem('uc_kitchen_print_enabled', isKitchenPrintEnabled ? 'true' : 'false');
+        updateKitchenPrintUI();
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        updateKitchenPrintUI();
+    });
+
+    function toggleKitchenPrint() {
+        isKitchenPrintEnabled = !isKitchenPrintEnabled;
+        localStorage.setItem('uc_kitchen_print_enabled', isKitchenPrintEnabled ? 'true' : 'false');
+        updateKitchenPrintUI();
+        db.ref('settings/kitchenOrderPrint').set(isKitchenPrintEnabled);
+    }
 
     let shiftLogsListenerAttached = false;
     function loadShiftLogsData() {
@@ -1232,16 +1289,18 @@
             printedItem: false
         }));
 
-        let orderPayload = {
-            type: 'kitchen',
-            table: curTable,
-            items: preparedItems,
-            timestamp: Date.now(),
-            printed: false,
-            staffName: staffName,  
-            staff: staffName       
-        };
-        db.ref('orders').push(orderPayload);
+        if (isKitchenPrintEnabled) {
+            let orderPayload = {
+                type: 'kitchen',
+                table: curTable,
+                items: preparedItems,
+                timestamp: Date.now(),
+                printed: false,
+                staffName: staffName,
+                staff: staffName
+            };
+            db.ref('orders').push(orderPayload);
+        }
 
         items.forEach(it => {
             it.sent = true;
