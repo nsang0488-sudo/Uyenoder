@@ -175,6 +175,7 @@
             <input type="tel" id="regPhone" class="auth-input" placeholder="Số điện thoại" autocomplete="tel">
             <input type="password" id="regPass" class="auth-input" placeholder="Mật khẩu" autocomplete="new-password">
             <input type="text" id="regName" class="auth-input" placeholder="Tên nhân viên (VD: Lan Anh)" autocomplete="name">
+            <input type="number" id="regCode" class="auth-input" placeholder="Mã đăng ký (do quản lý cấp)" oninput="if(this.value.length > 5) this.value = this.value.slice(0,5);">
             <button type="submit" style="width: 100%; background: var(--primary-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 5px;">ĐĂNG KÝ VÀ VÀO CA</button>
         </form>
     </div>
@@ -596,8 +597,10 @@
         const phone = (document.getElementById('regPhone').value || '').trim();
         const pass = (document.getElementById('regPass').value || '').trim();
         const name = (document.getElementById('regName').value || '').trim();
+        const code = (document.getElementById('regCode').value || '').trim();
 
-        if (!phone || !pass || !name) return alert("Vui lòng điền đầy đủ số điện thoại, mật khẩu và tên nhân viên!");
+        if (!phone || !pass || !name || !code) return alert("Vui lòng điền đầy đủ số điện thoại, mật khẩu, tên nhân viên và mã đăng ký!");
+        if (code !== String(currentRegCode)) return alert("Mã đăng ký không chính xác hoặc đã hết hạn!");
 
         // Kiểm tra xem số điện thoại đã được đăng ký trước đó chưa
         const devKeys = Object.keys(allDevicesData || {});
