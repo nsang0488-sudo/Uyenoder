@@ -114,8 +114,11 @@
         .detail-item { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-top: 4px; border-bottom: 1px dotted #ddd; padding-bottom: 4px; }
 
         #authOverlay { background: #f4f7f6; display: flex; flex-direction: column; z-index: 999999; }
-        .auth-container { background: #ffffff; padding: 40px 25px; border-radius: 16px; width: 100%; max-width: 340px; text-align: center; border: 1px solid #ddd; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .auth-input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; outline: none; background: #f9f9f9; }
+        .auth-container { background: #ffffff; padding: 30px 22px; border-radius: 16px; width: 100%; max-width: 350px; text-align: center; border: 1px solid #ddd; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .auth-tabs { display: flex; margin-bottom: 20px; background: #eef2f5; border-radius: 10px; padding: 4px; gap: 4px; }
+        .auth-tab-btn { flex: 1; padding: 10px 0; border: none; background: transparent; font-weight: bold; font-size: 14px; border-radius: 8px; cursor: pointer; color: #666; transition: all 0.2s; }
+        .auth-tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .auth-input { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; outline: none; background: #f9f9f9; box-sizing: border-box; }
         .auth-input:focus { border-color: var(--primary); background: #fff; }
         .dev-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed #ddd; font-size: 13px; }
 
@@ -152,12 +155,28 @@
 
 <div id="authOverlay" class="modal-overlay">
     <div class="auth-container">
-        <h2 style="color: var(--primary); margin-top: 0; font-weight: 800;">KÍCH HOẠT THIẾT BỊ</h2>
-        <p style="font-size: 13px; color: gray; margin-bottom: 25px;">Vui lòng nhập mã đăng ký do quản lý cấp để sử dụng hệ thống.</p>
-        <input type="text" id="regName" class="auth-input" placeholder="Tên nhân viên (VD: Lan Anh)">
-        <input type="password" id="regPass" class="auth-input" placeholder="Tạo mật khẩu cá nhân">
-        <input type="number" id="regCode" class="auth-input" placeholder="Mã đăng ký (5 số)" oninput="if(this.value.length > 5) this.value = this.value.slice(0,5);">
-        <button onclick="registerDevice()" style="width: 100%; background: var(--primary-gradient); color: white; padding: 15px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px;">ĐĂNG KÝ VÀ VÀO CA</button>
+        <div style="font-size: 32px; margin-bottom: 5px;">☕</div>
+        <h2 style="color: var(--primary); margin: 0 0 15px 0; font-weight: 800; font-size: 20px; letter-spacing: 0.5px;">UYÊN COFFEE</h2>
+
+        <div class="auth-tabs">
+            <button id="authTabLogin" class="auth-tab-btn active" onclick="switchAuthTab('login')">Đăng nhập</button>
+            <button id="authTabRegister" class="auth-tab-btn" onclick="switchAuthTab('register')">Đăng ký</button>
+        </div>
+
+        <form id="formLogin" onsubmit="event.preventDefault(); handleLogin();">
+            <p style="font-size: 13px; color: gray; margin-top: 0; margin-bottom: 15px;">Nhập số điện thoại và mật khẩu để vào ca.</p>
+            <input type="tel" id="loginPhone" class="auth-input" placeholder="Số điện thoại" autocomplete="username">
+            <input type="password" id="loginPass" class="auth-input" placeholder="Mật khẩu" autocomplete="current-password">
+            <button type="submit" style="width: 100%; background: var(--primary-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 5px;">ĐĂNG NHẬP VÀ VÀO CA</button>
+        </form>
+
+        <form id="formRegister" style="display: none;" onsubmit="event.preventDefault(); handleRegister();">
+            <p style="font-size: 13px; color: gray; margin-top: 0; margin-bottom: 15px;">Tạo tài khoản nhân viên mới cho thiết bị.</p>
+            <input type="tel" id="regPhone" class="auth-input" placeholder="Số điện thoại" autocomplete="tel">
+            <input type="password" id="regPass" class="auth-input" placeholder="Mật khẩu" autocomplete="new-password">
+            <input type="text" id="regName" class="auth-input" placeholder="Tên nhân viên (VD: Lan Anh)" autocomplete="name">
+            <button type="submit" style="width: 100%; background: var(--primary-gradient); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 5px;">ĐĂNG KÝ VÀ VÀO CA</button>
+        </form>
     </div>
 </div>
 
@@ -169,7 +188,7 @@
             <span id="connText" style="font-size: 11px; font-weight: bold;">Kết nối...</span>
         </div>
         <button class="nav-item" onclick="showTab('tasks')">📋 VIỆC</button>
-        <button class="nav-item" onclick="accessAdmin()">⚙️ QUẢN LÝ</button>
+        <button id="btnAdminNav" class="nav-item" onclick="accessAdmin()" style="display: none;">⚙️ QUẢN LÝ</button>
     </div>
 </div>
 
@@ -327,7 +346,7 @@
 
 <div id="tab-admin" class="tab-content">
     <div style="padding:15px; width:100%; overflow-y:auto; padding-bottom:100px;">
-        <h2 style="color: var(--dark);">Khu Vực Quản Lý (Mật khẩu)</h2>
+        <h2 style="color: var(--dark);">Khu Vực Quản Lý</h2>
 
         <div class="admin-section">
             <h3 style="margin-top:0;">📱 Thiết Bị & Quyền</h3>
@@ -502,6 +521,25 @@
         updateTasksViewDropdown();
     });
 
+    function switchAuthTab(tab) {
+        const tabLogin = document.getElementById('authTabLogin');
+        const tabRegister = document.getElementById('authTabRegister');
+        const formLogin = document.getElementById('formLogin');
+        const formRegister = document.getElementById('formRegister');
+
+        if (tab === 'login') {
+            tabLogin.classList.add('active');
+            tabRegister.classList.remove('active');
+            formLogin.style.display = 'block';
+            formRegister.style.display = 'none';
+        } else {
+            tabRegister.classList.add('active');
+            tabLogin.classList.remove('active');
+            formRegister.style.display = 'block';
+            formLogin.style.display = 'none';
+        }
+    }
+
     function checkDeviceAuth(devices) {
         if (isAdmin) return;
 
@@ -513,6 +551,7 @@
         } else {
             document.getElementById('authOverlay').style.display = 'none';
         }
+        updateAdminNavVisibility();
     }
 
     function getUserRole() {
@@ -524,16 +563,56 @@
         return "Phục vụ";
     }
 
-    function registerDevice() {
-        const name = document.getElementById('regName').value.trim();
-        const pass = document.getElementById('regPass').value.trim();
-        const code = document.getElementById('regCode').value.trim();
+    function handleLogin() {
+        const phone = (document.getElementById('loginPhone').value || '').trim();
+        const pass = (document.getElementById('loginPass').value || '').trim();
 
-        if (!name || !pass || !code) return alert("Vui lòng điền đầy đủ thông tin!");
-        if (code !== String(currentRegCode)) return alert("Mã đăng ký không chính xác hoặc đã hết hạn!");
+        if (!phone || !pass) return alert("Vui lòng nhập đầy đủ số điện thoại và mật khẩu!");
+
+        // Tìm trong allDevicesData
+        const devKeys = Object.keys(allDevicesData || {});
+        let matchedDevId = null;
+
+        for (let i = 0; i < devKeys.length; i++) {
+            const dev = allDevicesData[devKeys[i]];
+            if (dev && String(dev.phone || '').trim() === phone && String(dev.password || '') === pass) {
+                matchedDevId = devKeys[i];
+                break;
+            }
+        }
+
+        if (matchedDevId) {
+            localStorage.setItem('uc_dev_id', matchedDevId);
+            localStorage.setItem('uc_dev_pass', pass);
+            document.getElementById('authOverlay').style.display = 'none';
+            updateAdminNavVisibility();
+            alert("Đăng nhập thành công! Chúc bạn một ca làm việc vui vẻ.");
+        } else {
+            alert("Số điện thoại hoặc mật khẩu không chính xác!");
+        }
+    }
+
+    function handleRegister() {
+        const phone = (document.getElementById('regPhone').value || '').trim();
+        const pass = (document.getElementById('regPass').value || '').trim();
+        const name = (document.getElementById('regName').value || '').trim();
+
+        if (!phone || !pass || !name) return alert("Vui lòng điền đầy đủ số điện thoại, mật khẩu và tên nhân viên!");
+
+        // Kiểm tra xem số điện thoại đã được đăng ký trước đó chưa
+        const devKeys = Object.keys(allDevicesData || {});
+        const phoneExists = devKeys.some(k => {
+            const dev = allDevicesData[k];
+            return dev && String(dev.phone || '').trim() === phone;
+        });
+
+        if (phoneExists) {
+            return alert("Số điện thoại này đã được đăng ký! Vui lòng chọn tab Đăng nhập hoặc sử dụng số khác.");
+        }
 
         const newDevId = 'DEV_' + Date.now();
         db.ref('devices/' + newDevId).set({
+            phone: phone,
             name: name,
             password: pass,
             role: 'Phục vụ',
@@ -542,7 +621,10 @@
             localStorage.setItem('uc_dev_id', newDevId);
             localStorage.setItem('uc_dev_pass', pass);
             document.getElementById('authOverlay').style.display = 'none';
+            updateAdminNavVisibility();
             alert("Đăng ký thành công! Quyền mặc định của bạn là Phục vụ.");
+        }).catch(err => {
+            alert("Có lỗi xảy ra khi đăng ký: " + (err.message || err));
         });
     }
 
@@ -556,11 +638,14 @@
         Object.keys(devices).forEach(key => {
             const dev = devices[key];
             const currentRole = dev.role || 'Phục vụ';
+            const phoneDisplay = dev.phone ? dev.phone : 'Chưa cập nhật';
+            const passDisplay = dev.password || '---';
             list.innerHTML += `
                 <div class="dev-item">
                     <div>
                         <b style="font-size:14px; color:var(--dark);">👤 ${dev.name}</b><br>
-                        <span style="color:gray; font-size:11px;">Ngày tạo: ${dev.createdAt}</span><br>
+                        <span style="font-size:12px; color:#2b6cb0;">📞 SĐT: <b>${phoneDisplay}</b> | 🔑 MK: <b>${passDisplay}</b></span><br>
+                        <span style="color:gray; font-size:11px;">Ngày tạo: ${dev.createdAt || 'N/A'}</span><br>
                         <select onchange="updateDeviceRole('${key}', this.value)" style="margin-top:8px; padding:6px; font-size:12px; border-radius:6px; font-weight:bold; border:1px solid #ddd;">
                             <option value="Phục vụ" ${currentRole === 'Phục vụ' ? 'selected' : ''}>Phục vụ (Không thể tính tiền)</option>
                             <option value="Thu ngân" ${currentRole === 'Thu ngân' ? 'selected' : ''}>Thu ngân (Được tính tiền)</option>
@@ -768,15 +853,27 @@
         }
     }
 
-    function accessAdmin() {
-        if(prompt("Nhập mật khẩu quản lý:") === "1905") {
-            isAdmin = true;
-            document.getElementById('authOverlay').style.display = 'none';
-            loadShiftLogsData();
-            showTab('admin');
+    function updateAdminNavVisibility() {
+        const btn = document.getElementById('btnAdminNav');
+        if (!btn) return;
+        const role = getUserRole();
+        if (role === 'Quản lý') {
+            btn.style.display = 'flex';
         } else {
-            alert("Sai mật khẩu!");
+            btn.style.display = 'none';
         }
+    }
+
+    function accessAdmin() {
+        const role = getUserRole();
+        if (role !== 'Quản lý') {
+            alert("Chỉ tài khoản Quản lý mới có quyền truy cập mục này!");
+            return;
+        }
+        isAdmin = true;
+        document.getElementById('authOverlay').style.display = 'none';
+        loadShiftLogsData();
+        showTab('admin');
     }
 
     function startShift() { db.ref('active_shift').set({start: new Date().toLocaleString('vi-VN'), revenue: 0, revenueCash: 0, revenueTransfer: 0}); }
