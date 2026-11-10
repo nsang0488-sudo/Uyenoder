@@ -1,0 +1,11 @@
+{
+  "name": "uyen-coffee-pos-pro",
+  "version": "1.0.0",
+  "description": "UYÊN COFFEE POS PRO System",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^4.1.1"
+  }
+}
