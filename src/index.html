@@ -105,8 +105,33 @@
         .modal { background: #ffffff; width: 100%; max-width: 350px; border-radius: 12px; padding: 25px; max-height: 85vh; overflow-y: auto; border: 1px solid #ddd; }
 
         .admin-section { background: #ffffff; padding: 18px; border-radius: 12px; margin-bottom: 18px; border: 1px solid #ddd; }
+        .app-page-shell { flex: 1; width: 100%; max-width: 760px; min-height: 0; margin: 0 auto; padding: 16px 14px 96px; overflow-y: auto; }
+        .app-screen { display: none; }
+        .app-screen.active { display: block; }
+        .app-page-header { display: flex; align-items: center; gap: 12px; margin: 4px 0 18px; }
+        .app-page-header h2 { margin: 0; color: var(--dark); font-size: 20px; }
+        .app-page-header p { margin: 3px 0 0; color: #718096; font-size: 12px; }
+        .app-back-btn { flex: 0 0 auto; width: 42px; height: 42px; border: 0; border-radius: 12px; background: #ede9fe; color: var(--primary); font-size: 20px; font-weight: 800; }
+        .app-home-card { display: flex; align-items: center; gap: 14px; width: 100%; padding: 15px; margin: 0 0 11px; border: 1px solid #e6e8f0; border-radius: 16px; background: #fff; text-align: left; box-shadow: 0 4px 16px rgba(32, 38, 60, .04); }
+        .app-home-icon { display: grid; flex: 0 0 46px; width: 46px; height: 46px; place-items: center; border-radius: 14px; background: #f1efff; font-size: 22px; }
+        .app-home-card b { display: block; color: var(--dark); font-size: 15px; }
+        .app-home-card small { display: block; margin-top: 4px; color: #718096; font-size: 12px; line-height: 1.4; }
+        .app-home-arrow { margin-left: auto; color: #9aa3b2; font-size: 22px; }
         .bill-history-card { background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 5px solid var(--primary); margin-bottom: 12px; font-size: 13px; border-right: 1px solid #ddd; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
         .shift-log-card { background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 5px solid var(--dark); margin-bottom: 12px; font-size: 13px; border-right: 1px solid #ddd; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
+        .revenue-total-card { padding: 20px; margin-bottom: 12px; border-radius: 18px; background: var(--primary-gradient); color: #fff; box-shadow: 0 8px 20px rgba(100, 80, 190, .18); }
+        .revenue-total-card small { display: block; opacity: .9; font-size: 12px; font-weight: 700; }
+        .revenue-total-card strong { display: block; margin: 8px 0 4px; font-size: 28px; line-height: 1.2; overflow-wrap: anywhere; }
+        .revenue-total-card span { font-size: 12px; opacity: .9; }
+        .revenue-breakdown-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+        .revenue-breakdown-card { padding: 15px; border: 1px solid #e8eaf1; border-radius: 14px; background: #fff; }
+        .revenue-breakdown-card small { display: block; color: #718096; font-size: 11px; font-weight: 700; }
+        .revenue-breakdown-card strong { display: block; margin-top: 6px; color: var(--dark); font-size: 17px; overflow-wrap: anywhere; }
+        .revenue-filter-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .history-entry-card { padding: 13px; margin-bottom: 10px; border: 1px solid #e5e7ef; border-left: 4px solid var(--danger); border-radius: 12px; background: #fff; font-size: 12px; }
+        .history-entry-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+        .history-entry-delete, .history-delete-all { flex: 0 0 auto; border: 0; border-radius: 8px; background: var(--danger); color: #fff; padding: 8px 11px; font-size: 11px; font-weight: 800; }
+        .history-delete-all { background: var(--danger-gradient); }
 
         .opt-btn { background: #fff; border: 1px solid #ddd; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; }
         .opt-btn.active { background: var(--primary); color: white; border: none; }
@@ -294,100 +319,182 @@
 </div>
 
 <div id="tab-store" class="tab-content">
-    <div style="padding:15px; width:100%; overflow-y:auto; padding-bottom:100px;">
-        <h2 style="color: var(--dark);">🏪 Quản Lý Cửa Hàng</h2>
-
-        <div class="admin-section">
-            <h3 style="margin-top:0;">📦 Trạng Thái Ca Trong Ngày</h3>
-            <div id="shiftSummary" style="margin-bottom:15px; padding:15px; background:#f9f9f9; border:1px solid #ddd; border-radius:10px; font-size:14px; line-height: 1.6;">Chưa mở ca</div>
-            <button onclick="startShift()" id="btnOpen" style="width:100%;padding:14px;background:var(--success-gradient);color:white;border:none;border-radius:10px;font-weight:bold;">MỞ CA MỚI</button>
-            <button onclick="endShift()" id="btnClose" style="width:100%;padding:14px;background:var(--danger-gradient);color:white;border:none;border-radius:10px;display:none;font-weight:bold;">CHỐT CA (ĐÓNG CA)</button>
-        </div>
-
-        <div class="admin-section" id="activeBillSection" style="display:none;">
-            <h3 style="margin-top:0;">🧾 Bill Trong Ca Hiện Tại</h3>
-            <div id="activeBillsList"></div>
-        </div>
-
-        <div class="admin-section" id="editHistorySection">
-            <h3 style="margin-top:0; color: var(--dark);">📝 Lịch Sử Sửa / Xóa Hóa Đơn & Món</h3>
-            <div id="editHistoryList" style="max-height: 350px; overflow-y: auto;">Chưa có lịch sử thay đổi</div>
-        </div>
-
-        <div class="admin-section">
-            <h3 style="margin-top:0;">📝 Quản Lý Menu Món</h3>
-            <input id="inCategory" placeholder="Nhóm món (VD: Cà phê, Sinh tố...)" style="width:100%;padding:14px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
-            <input id="inName" placeholder="Tên món" style="width:100%;padding:14px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
-            <input id="inPrice" type="number" placeholder="Giá" style="width:100%;padding:14px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-                <input type="checkbox" id="inHasHotCold" checked style="width:20px; height:20px; cursor:pointer;">
-                <label for="inHasHotCold" style="font-size:14px; font-weight:bold; cursor:pointer; margin:0;">Có chọn Nóng / Đá</label>
+    <div class="app-page-shell">
+        <div id="storeScreen-home" class="app-screen active">
+            <div class="app-page-header">
+                <div class="app-home-icon">🏪</div>
+                <div><h2>Quản Lý Cửa Hàng</h2><p>Ca làm việc và công cụ cửa hàng</p></div>
             </div>
-            <button onclick="addMenu()" style="width:100%;padding:14px;background:var(--primary-gradient);color:white;border:none;border-radius:10px; font-weight: bold;">THÊM MÓN</button>
-            <div id="adminMenu" style="margin-top:15px; max-height:300px; overflow-y:auto; padding-right: 5px;"></div>
+
+            <div class="admin-section">
+                <h3 style="margin-top:0;">📦 Trạng Thái Ca Trong Ngày</h3>
+                <div id="shiftSummary" style="margin-bottom:15px; padding:15px; background:#f9f9f9; border:1px solid #ddd; border-radius:10px; font-size:14px; line-height: 1.6;">Chưa mở ca</div>
+                <button onclick="startShift()" id="btnOpen" style="width:100%;padding:14px;background:var(--success-gradient);color:white;border:none;border-radius:10px;font-weight:bold;">MỞ CA MỚI</button>
+                <button onclick="endShift()" id="btnClose" style="width:100%;padding:14px;background:var(--danger-gradient);color:white;border:none;border-radius:10px;display:none;font-weight:bold;">CHỐT CA (ĐÓNG CA)</button>
+            </div>
+
+            <button class="app-home-card" onclick="openStoreScreen('bills')">
+                <span class="app-home-icon">🧾</span><span><b>Hóa đơn trong ca</b><small>Xem các hóa đơn đã thanh toán trong ca hiện tại</small></span><span class="app-home-arrow">›</span>
+            </button>
+            <button class="app-home-card" onclick="openStoreScreen('menu')">
+                <span class="app-home-icon">☕</span><span><b>Quản lý menu món</b><small>Thêm và cập nhật món trong cửa hàng</small></span><span class="app-home-arrow">›</span>
+            </button>
+            <button class="app-home-card" onclick="openStoreScreen('printer')">
+                <span class="app-home-icon">🖨️</span><span><b>Cài đặt máy in bếp</b><small>Điều chỉnh in phiếu khi xác nhận đơn</small></span><span class="app-home-arrow">›</span>
+            </button>
         </div>
 
-        <div class="admin-section" id="printKitchenSettingSection">
-            <h3 style="margin-top:0;">🖨️ Cài Đặt In Phiếu Bếp (Xác Nhận Đơn)</h3>
-            <p style="font-size:13px; color:#666; margin-top:0; margin-bottom:12px; line-height: 1.5;">
-                Khi <b>BẬT (ON)</b>: Bấm "Xác nhận" sẽ gửi lệnh in món mới về máy in bếp.<br>
-                Khi <b>TẮT (OFF)</b>: Bấm "Xác nhận" chỉ cập nhật món vào hệ thống, không gửi lệnh in về máy in giúp tiết kiệm giấy.
-            </p>
-            <div style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:12px 16px; border-radius:10px; border:1px solid #eee;">
-                <div>
-                    <span style="font-weight:bold; font-size:14px; color:var(--dark);">Trạng thái in phiếu order:</span>
-                    <div id="kitchenPrintStatusText" style="font-size:12px; font-weight:bold; color:var(--success); margin-top:2px;">ĐANG BẬT IN (ON)</div>
+        <div id="storeScreen-bills" class="app-screen">
+            <div class="app-page-header">
+                <button class="app-back-btn" onclick="openStoreScreen('home')" aria-label="Quay lại">‹</button>
+                <div><h2>Hóa đơn trong ca</h2><p>Các hóa đơn đã thanh toán trong ca hiện tại</p></div>
+            </div>
+            <div class="admin-section" id="activeBillSection" style="display:none;">
+                <h3 style="margin-top:0;">🧾 Bill Trong Ca Hiện Tại</h3>
+                <div id="activeBillsList"></div>
+            </div>
+        </div>
+
+        <div id="storeScreen-menu" class="app-screen">
+            <div class="app-page-header">
+                <button class="app-back-btn" onclick="openStoreScreen('home')" aria-label="Quay lại">‹</button>
+                <div><h2>Quản lý menu món</h2><p>Thêm món và cập nhật danh sách menu</p></div>
+            </div>
+            <div class="admin-section">
+                <h3 style="margin-top:0;">📝 Quản Lý Menu Món</h3>
+                <input id="inCategory" placeholder="Nhóm món (VD: Cà phê, Sinh tố...)" style="width:100%;padding:14px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
+                <input id="inName" placeholder="Tên món" style="width:100%;padding:14px;margin-bottom:8px;border:1px solid #ddd; border-radius: 10px; background: white;">
+                <input id="inPrice" type="number" placeholder="Giá" style="width:100%;padding:14px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                    <input type="checkbox" id="inHasHotCold" checked style="width:20px; height:20px; cursor:pointer;">
+                    <label for="inHasHotCold" style="font-size:14px; font-weight:bold; cursor:pointer; margin:0;">Có chọn Nóng / Đá</label>
                 </div>
-                <button id="btnToggleKitchenPrint" onclick="toggleKitchenPrint()" style="padding:10px 20px; font-size:14px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; background:var(--success); color:white; transition: all 0.2s ease;">
-                    BẬT (ON)
-                </button>
+                <button onclick="addMenu()" style="width:100%;padding:14px;background:var(--primary-gradient);color:white;border:none;border-radius:10px; font-weight: bold;">THÊM MÓN</button>
+                <div id="adminMenu" style="margin-top:15px; max-height:300px; overflow-y:auto; padding-right: 5px;"></div>
+            </div>
+        </div>
+
+        <div id="storeScreen-printer" class="app-screen">
+            <div class="app-page-header">
+                <button class="app-back-btn" onclick="openStoreScreen('home')" aria-label="Quay lại">‹</button>
+                <div><h2>Cài đặt máy in bếp</h2><p>Thiết lập phiếu in khi xác nhận đơn</p></div>
+            </div>
+            <div class="admin-section" id="printKitchenSettingSection">
+                <h3 style="margin-top:0;">🖨️ Cài Đặt In Phiếu Bếp (Xác Nhận Đơn)</h3>
+                <p style="font-size:13px; color:#666; margin-top:0; margin-bottom:12px; line-height: 1.5;">
+                    Khi <b>BẬT (ON)</b>: Bấm "Xác nhận" sẽ gửi lệnh in món mới về máy in bếp.<br>
+                    Khi <b>TẮT (OFF)</b>: Bấm "Xác nhận" chỉ cập nhật món vào hệ thống, không gửi lệnh in về máy in giúp tiết kiệm giấy.
+                </p>
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:12px 16px; border-radius:10px; border:1px solid #eee;">
+                    <div>
+                        <span style="font-weight:bold; font-size:14px; color:var(--dark);">Trạng thái in phiếu order:</span>
+                        <div id="kitchenPrintStatusText" style="font-size:12px; font-weight:bold; color:var(--success); margin-top:2px;">ĐANG BẬT IN (ON)</div>
+                    </div>
+                    <button id="btnToggleKitchenPrint" onclick="toggleKitchenPrint()" style="padding:10px 20px; font-size:14px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; background:var(--success); color:white; transition: all 0.2s ease;">
+                        BẬT (ON)
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <div id="tab-admin" class="tab-content">
-    <div style="padding:15px; width:100%; overflow-y:auto; padding-bottom:100px;">
-        <h2 style="color: var(--dark);">Khu Vực Quản Lý</h2>
+    <div class="app-page-shell">
+        <div id="adminScreen-home" class="app-screen active">
+            <div class="app-page-header">
+                <div class="app-home-icon">⚙️</div>
+                <div><h2>Khu Vực Quản Lý</h2><p>Chọn một chức năng để tiếp tục</p></div>
+            </div>
+            <button class="app-home-card" onclick="openAdminScreen('devices')">
+                <span class="app-home-icon">📱</span><span><b>Quản lý thiết bị</b><small>Thiết bị, quyền truy cập và mã đăng ký</small></span><span class="app-home-arrow">›</span>
+            </button>
+            <button class="app-home-card" onclick="openAdminScreen('revenue')">
+                <span class="app-home-icon">📊</span><span><b>Doanh thu & lịch sử ca</b><small>Lọc doanh thu theo ngày và xem ca đã chốt</small></span><span class="app-home-arrow">›</span>
+            </button>
+            <button class="app-home-card" onclick="openAdminScreen('editHistory')">
+                <span class="app-home-icon">📝</span><span><b>Lịch sử sửa / xóa</b><small>Kiểm tra và quản lý nhật ký thao tác hóa đơn</small></span><span class="app-home-arrow">›</span>
+            </button>
+            <button class="app-home-card" onclick="openAdminScreen('qr')">
+                <span class="app-home-icon">🖼️</span><span><b>Tài khoản QR</b><small>Cập nhật liên kết ảnh QR thanh toán</small></span><span class="app-home-arrow">›</span>
+            </button>
+        </div>
 
-        <div class="admin-section">
-            <h3 style="margin-top:0;">📱 Thiết Bị & Quyền</h3>
-            <div id="deviceList" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
-
-            <div style="background: rgba(248, 249, 255, 0.8); padding: 20px; border-radius: 12px; border: 1px dashed var(--primary); text-align: center;">
-                <p style="margin: 0 0 8px 0; font-size: 13px; color: #555;">Mã đăng ký cấp cho nhân viên:</p>
-                <b id="displayRegCode" style="font-size: 32px; color: var(--primary); letter-spacing: 6px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">-----</b>
-                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
-                    <button onclick="generateNewCode()" style="flex:1; padding:12px; background:var(--warning); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">MÃ MỚI</button>
-                    <button onclick="copyCode()" style="flex:1; padding:12px; background:var(--dark); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">SAO CHÉP</button>
+        <div id="adminScreen-devices" class="app-screen">
+            <div class="app-page-header">
+                <button class="app-back-btn" onclick="openAdminScreen('home')" aria-label="Quay lại">‹</button>
+                <div><h2>Quản lý thiết bị</h2><p>Thiết bị và quyền truy cập của nhân viên</p></div>
+            </div>
+            <div class="admin-section">
+                <h3 style="margin-top:0;">📱 Thiết Bị & Quyền</h3>
+                <div id="deviceList" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
+                <div style="background: rgba(248, 249, 255, 0.8); padding: 20px; border-radius: 12px; border: 1px dashed var(--primary); text-align: center;">
+                    <p style="margin: 0 0 8px 0; font-size: 13px; color: #555;">Mã đăng ký cấp cho nhân viên:</p>
+                    <b id="displayRegCode" style="font-size: 32px; color: var(--primary); letter-spacing: 6px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">-----</b>
+                    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="generateNewCode()" style="flex:1; padding:12px; background:var(--warning); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">MÃ MỚI</button>
+                        <button onclick="copyCode()" style="flex:1; padding:12px; background:var(--dark); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">SAO CHÉP</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="admin-section">
-            <h3 style="margin-top:0;">📊 Thống Kê Tổng Doanh Thu</h3>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
-                <input type="date" id="dateFrom" onchange="filterStats()" style="padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: white;">
-                <input type="date" id="dateTo" onchange="filterStats()" style="padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: white;">
+        <div id="adminScreen-revenue" class="app-screen">
+            <div class="app-page-header">
+                <button class="app-back-btn" onclick="openAdminScreen('home')" aria-label="Quay lại">‹</button>
+                <div><h2>Doanh thu & lịch sử ca</h2><p>Theo dõi doanh thu trong khoảng ngày đã chọn</p></div>
             </div>
-            <div style="background: rgba(233, 236, 239, 0.8); padding:15px; border-radius:10px; font-size:18px; font-weight:bold; text-align: center;">
-                Tổng lọc: <span id="statFiltered" style="color:var(--danger)">0đ</span>
+            <div class="admin-section">
+                <h3 style="margin-top:0;">📅 Khoảng thời gian</h3>
+                <div class="revenue-filter-grid">
+                    <label style="font-size:12px; color:#718096; font-weight:700;">Từ ngày<input type="date" id="dateFrom" onchange="loadShiftLogsData()" style="display:block; width:100%; padding:11px; margin-top:5px; border:1px solid #ddd; border-radius:9px; background:white;"></label>
+                    <label style="font-size:12px; color:#718096; font-weight:700;">Đến ngày<input type="date" id="dateTo" onchange="loadShiftLogsData()" style="display:block; width:100%; padding:11px; margin-top:5px; border:1px solid #ddd; border-radius:9px; background:white;"></label>
+                </div>
+            </div>
+            <div class="revenue-total-card">
+                <small>TỔNG DOANH THU TRONG KHOẢNG ĐÃ CHỌN</small>
+                <strong id="statFiltered">0đ</strong>
+                <span id="revenueRangeLabel">Chọn khoảng ngày để xem báo cáo</span>
+            </div>
+            <div class="revenue-breakdown-grid">
+                <div class="revenue-breakdown-card"><small>💵 TIỀN MẶT</small><strong id="statCashFiltered">0đ</strong></div>
+                <div class="revenue-breakdown-card"><small>💳 CHUYỂN KHOẢN</small><strong id="statTransferFiltered">0đ</strong></div>
+            </div>
+            <div class="admin-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:15px;">
+                    <div><h3 style="margin:0;">📜 Lịch sử ca đã chốt</h3><small id="shiftLogResultCount" style="display:block; margin-top:4px; color:#718096;">Chọn ngày để tải lịch sử</small></div>
+                    <button onclick="exportShiftLogs()" style="background:var(--success); color:white; border:none; padding:10px 15px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer;">📥 TẢI EXCEL</button>
+                </div>
+                <div id="shiftLogsList" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
             </div>
         </div>
 
-        <div class="admin-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0;">📜 Lịch Sử Ca Đã Chốt</h3>
-                <button onclick="exportShiftLogs()" style="background:var(--success); color:white; border:none; padding:10px 15px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer;">📥 TẢI EXCEL</button>
+        <div id="adminScreen-editHistory" class="app-screen">
+            <div class="app-page-header">
+                <button class="app-back-btn" onclick="openAdminScreen('home')" aria-label="Quay lại">‹</button>
+                <div><h2>Lịch sử sửa / xóa</h2><p>Nhật ký thay đổi hóa đơn và món trong cửa hàng</p></div>
             </div>
-            <div id="shiftLogsList" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
+            <div class="admin-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px;">
+                    <div><h3 style="margin:0;">📝 Nhật ký thao tác</h3><small style="display:block; margin-top:4px; color:#718096;">Dữ liệu được tải khi mở trang này</small></div>
+                    <button id="btnDeleteAllEditHistory" class="history-delete-all" onclick="deleteAllEditHistory()" style="display:none;">XÓA TẤT CẢ</button>
+                </div>
+                <div id="editHistoryStatus" style="font-size:12px; color:#718096; margin-bottom:10px;"></div>
+                <div id="editHistoryList" style="max-height:60vh; overflow-y:auto;">Đang tải lịch sử...</div>
+            </div>
         </div>
 
-        <div class="admin-section">
-            <h3 style="margin-top:0;">🖼️ Cài Đặt Tài Khoản QR</h3>
-            <label style="font-size:12px; font-weight:bold; color:var(--dark);">Link ảnh QR Thanh Toán (Mặc định):</label>
-            <input type="text" id="qrUrlInput" placeholder="Link ảnh QR..." style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
-            <button onclick="saveQR()" style="width:100%;padding:14px;background:var(--dark);color:white;border:none;border-radius:10px; font-weight: bold;">LƯU QR</button>
+        <div id="adminScreen-qr" class="app-screen">
+            <div class="app-page-header">
+                <button class="app-back-btn" onclick="openAdminScreen('home')" aria-label="Quay lại">‹</button>
+                <div><h2>Tài khoản QR</h2><p>Cài đặt liên kết ảnh QR thanh toán</p></div>
+            </div>
+            <div class="admin-section">
+                <h3 style="margin-top:0;">🖼️ Cài Đặt Tài Khoản QR</h3>
+                <label style="font-size:12px; font-weight:bold; color:var(--dark);">Link ảnh QR Thanh Toán (Mặc định):</label>
+                <input type="text" id="qrUrlInput" placeholder="Link ảnh QR..." style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd; border-radius: 10px; background: white;">
+                <button onclick="saveQR()" style="width:100%;padding:14px;background:var(--dark);color:white;border:none;border-radius:10px; font-weight: bold;">LƯU QR</button>
+            </div>
         </div>
     </div>
 </div>
@@ -727,7 +834,6 @@
     db.ref('tables').on('value', s => { tablesData = s.val()||{}; renderTables(); if(curTable) renderBill(); });
 
     db.ref('active_shift').on('value', s => { currentShift = s.val(); updateShiftUI(); renderActiveBills(); });
-    db.ref('edit_logs').on('value', s => { renderEditHistory(); });
 
     function logEditHistory(actionType, details, reason, table) {
         let staffName = "Admin";
@@ -751,35 +857,85 @@
         }
     }
 
+    let editHistoryRequestId = 0;
     function renderEditHistory() {
         const list = document.getElementById('editHistoryList');
         if (!list) return;
-        db.ref('edit_logs').once('value', snapshot => {
-            const data = snapshot.val();
-            if (!data) {
-                list.innerHTML = '<div style="color:gray; font-size:13px; text-align:center; padding:15px; background:#f9f9f9; border-radius:8px;">Chưa có lịch sử sửa / xóa nào.</div>';
+        const status = document.getElementById('editHistoryStatus');
+        const deleteAllButton = document.getElementById('btnDeleteAllEditHistory');
+        const canManage = getUserRole() === 'Quản lý';
+        const requestId = ++editHistoryRequestId;
+        if (deleteAllButton) deleteAllButton.style.display = canManage ? 'inline-flex' : 'none';
+        if (status) status.innerText = 'Đang tải lịch sử...';
+        list.innerHTML = '';
+
+        db.ref('edit_logs').once('value').then(snapshot => {
+            if (requestId !== editHistoryRequestId) return;
+            const data = snapshot.val() || {};
+            const entries = Object.entries(data).reverse();
+            if (status) status.innerText = `${entries.length} bản ghi`;
+            if (entries.length === 0) {
+                list.innerHTML = '<div style="color:gray; font-size:13px; text-align:center; padding:24px 12px; background:#f9f9f9; border-radius:10px;">Chưa có lịch sử sửa / xóa nào.</div>';
                 return;
             }
-            let html = '';
-            const entries = Object.values(data).reverse();
-            entries.forEach(item => {
-                html += `
-                    <div style="background:#ffffff; border:1px solid #e0e0e0; border-left:4px solid var(--danger); border-radius:8px; padding:10px 12px; margin-bottom:8px; font-size:12px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; color:var(--dark); margin-bottom:4px;">
-                            <span>⚠️ ${item.action} ${item.table ? '(Bàn ' + item.table + ')' : ''}</span>
-                            <span style="color:#777; font-weight:normal; font-size:11px;">🕒 ${item.timestamp || item.time}</span>
-                        </div>
-                        <div style="color:#333; margin-bottom:4px; font-size:12px;">${item.details}</div>
-                        <div style="background:#fff3cd; color:#856404; padding:5px 8px; border-radius:5px; font-weight:bold; margin-top:4px;">
-                            💬 Lý do: ${item.reason}
-                        </div>
-                        <div style="color:#888; font-size:11px; margin-top:4px; text-align:right;">
-                            👤 Thao tác: <b>${item.staff || 'N/A'}</b>
-                        </div>
+
+            list.innerHTML = entries.map(([key, item]) => `
+                <div class="history-entry-card">
+                    <div class="history-entry-top">
+                        <div style="font-weight:800; color:var(--dark);">⚠️ ${item.action || 'Thay đổi'} ${item.table ? '(Bàn ' + item.table + ')' : ''}<div style="margin-top:4px; color:#718096; font-size:11px; font-weight:400;">🕒 ${item.timestamp || item.time || 'Không rõ thời gian'}</div></div>
+                        ${canManage ? `<button class="history-entry-delete" onclick="deleteEditHistory('${key}', this)">XÓA</button>` : ''}
                     </div>
-                `;
-            });
-            list.innerHTML = html;
+                    <div style="color:#333; margin-bottom:8px;">${item.details || ''}</div>
+                    <div style="background:#fff8df; color:#856404; padding:7px 9px; border-radius:7px; font-weight:700;">💬 Lý do: ${item.reason || 'Không có lý do'}</div>
+                    <div style="color:#718096; font-size:11px; margin-top:8px; text-align:right;">👤 Thao tác: <b>${item.staff || 'N/A'}</b></div>
+                </div>
+            `).join('');
+        }).catch(error => {
+            if (requestId !== editHistoryRequestId) return;
+            if (status) status.innerText = 'Không thể tải lịch sử.';
+            list.innerHTML = '<div style="color:var(--danger); font-size:13px; padding:12px;">Lỗi tải lịch sử: ' + error.message + '</div>';
+            console.error('Không thể tải lịch sử sửa/xóa:', error);
+        });
+    }
+
+    function deleteEditHistory(key, button) {
+        if (getUserRole() !== 'Quản lý') return alert("Chỉ tài khoản Quản lý mới có quyền xóa lịch sử!");
+        if (!confirm("Xóa bản ghi lịch sử này?")) return;
+        if (button) {
+            button.disabled = true;
+            button.innerText = 'ĐANG XÓA';
+        }
+        db.ref('edit_logs/' + key).remove().then(() => {
+            renderEditHistory();
+        }).catch(error => {
+            if (button) {
+                button.disabled = false;
+                button.innerText = 'XÓA';
+            }
+            alert("Không thể xóa bản ghi: " + error.message);
+        });
+    }
+
+    function deleteAllEditHistory() {
+        if (getUserRole() !== 'Quản lý') return alert("Chỉ tài khoản Quản lý mới có quyền xóa lịch sử!");
+        if (!confirm("Xóa toàn bộ lịch sử sửa/xóa? Thao tác này không thể hoàn tác.")) return;
+        const button = document.getElementById('btnDeleteAllEditHistory');
+        if (button) {
+            button.disabled = true;
+            button.innerText = 'ĐANG XÓA';
+        }
+        db.ref('edit_logs').remove().then(() => {
+            if (button) {
+                button.disabled = false;
+                button.innerText = 'XÓA TẤT CẢ';
+            }
+            renderEditHistory();
+        }).catch(error => {
+            if (button) {
+                button.disabled = false;
+                button.innerText = 'XÓA TẤT CẢ';
+            }
+            alert("Không thể xóa lịch sử: " + error.message);
         });
     }
 
@@ -882,12 +1038,54 @@
         db.ref('settings/kitchenOrderPrint').set(isKitchenPrintEnabled);
     }
 
-    let shiftLogsListenerAttached = false;
+    let shiftLogsRequestId = 0;
     function loadShiftLogsData() {
-        if (!shiftLogsListenerAttached) {
-            shiftLogsListenerAttached = true;
-            db.ref('shift_logs').on('value', s => { renderShiftLogs(s.val()); filterStats(); });
+        const fromInput = document.getElementById('dateFrom');
+        const toInput = document.getElementById('dateTo');
+        const list = document.getElementById('shiftLogsList');
+        const resultCount = document.getElementById('shiftLogResultCount');
+        if (!fromInput || !toInput || !list) return;
+
+        const today = new Date();
+        const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        if (!fromInput.value) fromInput.value = todayValue;
+        if (!toInput.value) toInput.value = todayValue;
+
+        const requestId = ++shiftLogsRequestId;
+        const fromDate = new Date(fromInput.value + 'T00:00:00');
+        const toDate = new Date(toInput.value + 'T23:59:59.999');
+        const rangeLabel = document.getElementById('revenueRangeLabel');
+        if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime()) || fromDate > toDate) {
+            if (resultCount) resultCount.innerText = 'Khoảng ngày không hợp lệ';
+            list.innerHTML = '<p style="color:var(--danger); text-align:center; padding:16px;">Vui lòng chọn khoảng ngày hợp lệ.</p>';
+            filterStats({});
+            return;
         }
+
+        if (rangeLabel) rangeLabel.innerText = `${fromDate.toLocaleDateString('vi-VN')} đến ${toDate.toLocaleDateString('vi-VN')}`;
+        if (resultCount) resultCount.innerText = 'Đang tải ca trong khoảng đã chọn...';
+        list.innerHTML = '<p style="color:#718096; text-align:center; padding:16px;">Đang tải lịch sử ca...</p>';
+        filterStats({});
+
+        db.ref('shift_logs')
+            .orderByChild('timestamp')
+            .startAt(fromDate.getTime())
+            .endAt(toDate.getTime())
+            .once('value')
+            .then(snapshot => {
+                if (requestId !== shiftLogsRequestId) return;
+                const logs = snapshot.val() || {};
+                renderShiftLogs(logs);
+                filterStats(logs);
+                if (resultCount) resultCount.innerText = `${Object.keys(logs).length} ca trong khoảng đã chọn`;
+            })
+            .catch(error => {
+                if (requestId !== shiftLogsRequestId) return;
+                if (resultCount) resultCount.innerText = 'Không thể tải lịch sử ca';
+                list.innerHTML = '<p style="color:var(--danger); text-align:center; padding:16px;">Lỗi tải lịch sử ca: ' + error.message + '</p>';
+                filterStats({});
+                console.error('Không thể tải lịch sử ca:', error);
+            });
     }
 
     function updateAdminNavVisibility() {
@@ -909,8 +1107,30 @@
         }
         isAdmin = true;
         document.getElementById('authOverlay').style.display = 'none';
-        loadShiftLogsData();
         showTab('admin');
+    }
+
+    function setAppScreen(tabName, screenId) {
+        const tab = document.getElementById('tab-' + tabName);
+        const screen = document.getElementById(screenId);
+        if (!tab || !screen || !tab.contains(screen)) {
+            console.error('Không tìm thấy giao diện:', screenId);
+            return;
+        }
+        tab.querySelectorAll('.app-screen').forEach(page => page.classList.remove('active'));
+        screen.classList.add('active');
+        const pageShell = tab.querySelector('.app-page-shell');
+        if (pageShell) pageShell.scrollTop = 0;
+    }
+
+    function openStoreScreen(screen) {
+        setAppScreen('store', 'storeScreen-' + screen);
+    }
+
+    function openAdminScreen(screen) {
+        setAppScreen('admin', 'adminScreen-' + screen);
+        if (screen === 'revenue') loadShiftLogsData();
+        else if (screen === 'editHistory') renderEditHistory();
     }
 
     function startShift() { db.ref('active_shift').set({start: new Date().toLocaleString('vi-VN'), revenue: 0, revenueCash: 0, revenueTransfer: 0}); }
@@ -963,14 +1183,39 @@
         }
     }
 
-    function deleteShiftLog(key) { if(confirm("Bạn muốn xóa vĩnh viễn lịch sử ca này?")) db.ref('shift_logs/' + key).remove(); }
+    function deleteShiftLog(key, button) {
+        if (getUserRole() !== 'Quản lý') return alert("Chỉ tài khoản Quản lý mới có quyền xóa lịch sử ca!");
+        if (!confirm("Bạn muốn xóa vĩnh viễn lịch sử ca này?")) return;
+        if (button) {
+            button.disabled = true;
+            button.innerText = 'ĐANG XÓA';
+        }
+        db.ref('shift_logs/' + key).remove().then(() => {
+            loadShiftLogsData();
+        }).catch(error => {
+            if (button) {
+                button.disabled = false;
+                button.innerText = 'XÓA';
+            }
+            alert("Không thể xóa lịch sử ca: " + error.message);
+        });
+    }
 
     function renderShiftLogs(logs) {
-        const list = document.getElementById('shiftLogsList'); list.innerHTML = '';
-        if(!logs) { list.innerHTML = '<p style="color:gray; text-align:center;">Chưa có ca nào được chốt.</p>'; return; }
-        Object.keys(logs).reverse().forEach(key => {
-            const log = logs[key];
-            list.innerHTML += `<div class="shift-log-card"><div style="display:flex; justify-content:space-between;"><div><b style="color:var(--dark);">📅 ${log.date}</b><br><small style="color:gray;">🕒 ${log.start.split(',')[1] || log.start} - ${log.end}</small></div><button onclick="deleteShiftLog('${key}')" style="background:var(--danger); color:white; border:none; border-radius:6px; font-size:10px; padding:4px 8px; font-weight:bold;">XÓA</button></div><div style="font-size:12px; margin-top:8px; color:#555;">TM: ${(log.revenueCash||0).toLocaleString()} | CK: ${(log.revenueTransfer||0).toLocaleString()}</div><div style="color:var(--danger); font-weight:900; font-size:16px; margin-top:8px; border-top:1px dashed #eee; padding-top:8px;">Tổng: ${log.revenue.toLocaleString()}đ</div></div>`;
+        const list = document.getElementById('shiftLogsList');
+        if (!list) return;
+        list.innerHTML = '';
+        const entries = Object.entries(logs || {}).reverse();
+        if (entries.length === 0) {
+            list.innerHTML = '<p style="color:gray; text-align:center; padding:16px;">Không có ca nào trong khoảng ngày đã chọn.</p>';
+            return;
+        }
+        entries.forEach(([key, log]) => {
+            const start = log.start ? (log.start.split(',')[1] || log.start) : '—';
+            const revenue = Number(log.revenue) || 0;
+            const cash = Number(log.revenueCash) || 0;
+            const transfer = Number(log.revenueTransfer) || 0;
+            list.innerHTML += `<div class="shift-log-card"><div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;"><div><b style="color:var(--dark);">📅 ${log.date || 'Không rõ ngày'}</b><br><small style="color:gray;">🕒 ${start} - ${log.end || '—'}</small></div><button onclick="deleteShiftLog('${key}', this)" style="background:var(--danger); color:white; border:none; border-radius:8px; font-size:11px; padding:7px 10px; font-weight:bold;">XÓA</button></div><div style="font-size:12px; margin-top:10px; color:#555;">💵 Tiền mặt: ${cash.toLocaleString()}đ &nbsp;|&nbsp; 💳 Chuyển khoản: ${transfer.toLocaleString()}đ</div><div style="color:var(--danger); font-weight:900; font-size:17px; margin-top:9px; border-top:1px dashed #ddd; padding-top:9px;">Tổng doanh thu: ${revenue.toLocaleString()}đ</div></div>`;
         });
     }
 
@@ -1123,17 +1368,21 @@
         db.ref().update(updates);
     }
 
-    function filterStats() {
-        let from = document.getElementById('dateFrom').value, to = document.getElementById('dateTo').value;
-        if(!from || !to) return;
-        db.ref('shift_logs').once('value', s => {
-            let total = 0;
-            Object.values(s.val() || {}).forEach(log => {
-                let p = log.date.split('/'), logD = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-                if(logD >= from && logD <= to) total += log.revenue;
-            });
-            document.getElementById('statFiltered').innerText = total.toLocaleString() + "đ";
+    function filterStats(logs) {
+        let total = 0;
+        let cash = 0;
+        let transfer = 0;
+        Object.values(logs || {}).forEach(log => {
+            total += Number(log.revenue) || 0;
+            cash += Number(log.revenueCash) || 0;
+            transfer += Number(log.revenueTransfer) || 0;
         });
+        const totalEl = document.getElementById('statFiltered');
+        const cashEl = document.getElementById('statCashFiltered');
+        const transferEl = document.getElementById('statTransferFiltered');
+        if (totalEl) totalEl.innerText = total.toLocaleString() + 'đ';
+        if (cashEl) cashEl.innerText = cash.toLocaleString() + 'đ';
+        if (transferEl) transferEl.innerText = transfer.toLocaleString() + 'đ';
     }
 
     let currentTableSubTab = 'tables';
@@ -1856,6 +2105,8 @@
         const tabEl = document.getElementById('tab-'+id);
         if(tabEl) tabEl.classList.add('active');
         if(document.getElementById('btn-tab-'+id)) document.getElementById('btn-tab-'+id).classList.add('active');
+        if(id === 'store') openStoreScreen('home');
+        else if(id === 'admin') openAdminScreen('home');
 
         if(id === 'tables') {
             closeTableOrderView(true);
