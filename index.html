@@ -105,7 +105,7 @@
         .modal { background: #ffffff; width: 100%; max-width: 350px; border-radius: 12px; padding: 25px; max-height: 85vh; overflow-y: auto; border: 1px solid #ddd; }
 
         .admin-section { background: #ffffff; padding: 18px; border-radius: 12px; margin-bottom: 18px; border: 1px solid #ddd; }
-        .app-page-shell { flex: 1; width: 100%; max-width: 760px; min-height: 0; margin: 0 auto; padding: 16px 14px 96px; overflow-y: auto; }
+        .app-page-shell { flex: 1; width: 100%; max-width: 1280px; min-height: 0; margin: 0 auto; padding: 24px 28px; overflow-y: auto; }
         .app-screen { display: none; }
         .app-screen.active { display: block; }
         .app-page-header { display: flex; align-items: center; gap: 12px; margin: 4px 0 18px; }
@@ -113,6 +113,7 @@
         .app-page-header p { margin: 3px 0 0; color: #718096; font-size: 12px; }
         .app-back-btn { flex: 0 0 auto; width: 42px; height: 42px; border: 0; border-radius: 12px; background: #ede9fe; color: var(--primary); font-size: 20px; font-weight: 800; }
         .app-home-card { display: flex; align-items: center; gap: 14px; width: 100%; padding: 15px; margin: 0 0 11px; border: 1px solid #e6e8f0; border-radius: 16px; background: #fff; text-align: left; box-shadow: 0 4px 16px rgba(32, 38, 60, .04); }
+        .app-home-card > span:nth-child(2) { flex: 1; min-width: 0; }
         .app-home-icon { display: grid; flex: 0 0 46px; width: 46px; height: 46px; place-items: center; border-radius: 14px; background: #f1efff; font-size: 22px; }
         .app-home-card b { display: block; color: var(--dark); font-size: 15px; }
         .app-home-card small { display: block; margin-top: 4px; color: #718096; font-size: 12px; line-height: 1.4; }
@@ -161,7 +162,50 @@
         button { cursor: pointer; }
         button:active { transform: scale(0.97); }
 
+        @media (min-width: 769px) {
+            .mobile-bottom-nav { left: 50%; width: min(360px, calc(100% - 32px)); height: 56px; transform: translateX(-50%); border: 1px solid #e1e4eb; border-bottom: 0; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 18px rgba(30, 40, 60, .06); }
+            .tab-content { padding-bottom: 56px; }
+            .app-page-header { margin-bottom: 22px; }
+            .app-page-header h2 { font-size: 25px; }
+            .app-page-header p { font-size: 13px; }
+            .admin-section { padding: 22px; }
+            #adminScreen-home.app-screen.active,
+            #storeScreen-home.app-screen.active { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-content: start; }
+            #adminScreen-home .app-page-header,
+            #storeScreen-home .app-page-header,
+            #storeScreen-home > .admin-section { grid-column: 1 / -1; }
+            #adminScreen-home .app-home-card,
+            #storeScreen-home .app-home-card { min-height: 100px; margin: 0; }
+            #adminScreen-devices,
+            #adminScreen-editHistory,
+            #adminScreen-qr,
+            #storeScreen-bills,
+            #storeScreen-menu,
+            #storeScreen-printer { max-width: 900px; margin: 0 auto; }
+            #adminScreen-revenue.app-screen.active { display: grid; grid-template-columns: minmax(280px, .9fr) minmax(0, 1.3fr); gap: 16px; align-content: start; }
+            #adminScreen-revenue .app-page-header,
+            #adminScreen-revenue .revenue-history-section { grid-column: 1 / -1; }
+            #adminScreen-revenue .revenue-date-section { grid-column: 1; grid-row: 2 / span 2; margin: 0; }
+            #adminScreen-revenue .revenue-total-card { grid-column: 2; grid-row: 2; margin: 0; }
+            #adminScreen-revenue .revenue-breakdown-grid { grid-column: 2; grid-row: 3; margin: 0; }
+            #adminScreen-revenue .revenue-history-section { margin: 0; }
+            #shiftLogsList { max-height: 60vh !important; }
+        }
+
+        @media (min-width: 1100px) {
+            #adminScreen-home.app-screen.active { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            #storeScreen-home.app-screen.active { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+
         @media (max-width: 768px) {
+            .app-page-shell { max-width: none; padding: 14px 12px 24px; }
+            .admin-section { padding: 16px; margin-bottom: 14px; }
+            .app-page-header { margin-bottom: 16px; }
+            .app-page-header h2 { font-size: 19px; }
+            .app-home-card { min-height: 76px; padding: 13px; gap: 12px; }
+            .revenue-total-card { padding: 18px; }
+            .revenue-total-card strong { font-size: clamp(23px, 7vw, 30px); }
+            #shiftLogsList { max-height: 55vh !important; }
             .menu-container-flex { width: 60%; }
             .bill-part { width: 40%; }
             .category-sidebar { width: 60px; }
@@ -174,6 +218,22 @@
             .bill-row { font-size: 11px; padding: 8px 5px; }
             .pos-controls { display: flex; flex-direction: column; padding: 8px; gap: 6px; }
             .pos-controls button { padding: 12px; font-size: 11px !important; margin: 0; }
+        }
+
+        @media (max-width: 520px) {
+            .navbar { gap: 6px; padding: 8px 10px; }
+            .navbar > div:first-child { flex-shrink: 0; white-space: nowrap; font-size: clamp(12px, 3.8vw, 15px) !important; letter-spacing: .3px !important; }
+            .navbar > div:last-child { min-width: 0; gap: 4px !important; }
+            .nav-item { padding: 8px 7px; font-size: 10px; white-space: nowrap; }
+            #connectionStatusIndicator { gap: 4px !important; padding: 7px !important; }
+            #connText { font-size: 9px !important; }
+        }
+
+        @media (max-width: 360px) {
+            .navbar > div:first-child { font-size: 12px !important; }
+            #connectionStatusIndicator { min-width: 23px; padding: 7px !important; }
+            #connText { display: none; }
+            .nav-item { padding: 7px 5px; font-size: 9px; }
         }
     </style>
 </head>
@@ -444,7 +504,7 @@
                 <button class="app-back-btn" onclick="openAdminScreen('home')" aria-label="Quay lại">‹</button>
                 <div><h2>Doanh thu & lịch sử ca</h2><p>Theo dõi doanh thu trong khoảng ngày đã chọn</p></div>
             </div>
-            <div class="admin-section">
+            <div class="admin-section revenue-date-section">
                 <h3 style="margin-top:0;">📅 Khoảng thời gian</h3>
                 <div class="revenue-filter-grid">
                     <label style="font-size:12px; color:#718096; font-weight:700;">Từ ngày<input type="date" id="dateFrom" onchange="loadShiftLogsData()" style="display:block; width:100%; padding:11px; margin-top:5px; border:1px solid #ddd; border-radius:9px; background:white;"></label>
@@ -460,7 +520,7 @@
                 <div class="revenue-breakdown-card"><small>💵 TIỀN MẶT</small><strong id="statCashFiltered">0đ</strong></div>
                 <div class="revenue-breakdown-card"><small>💳 CHUYỂN KHOẢN</small><strong id="statTransferFiltered">0đ</strong></div>
             </div>
-            <div class="admin-section">
+            <div class="admin-section revenue-history-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:15px;">
                     <div><h3 style="margin:0;">📜 Lịch sử ca đã chốt</h3><small id="shiftLogResultCount" style="display:block; margin-top:4px; color:#718096;">Chọn ngày để tải lịch sử</small></div>
                     <button onclick="exportShiftLogs()" style="background:var(--success); color:white; border:none; padding:10px 15px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer;">📥 TẢI EXCEL</button>
